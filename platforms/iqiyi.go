@@ -11,7 +11,7 @@ import (
 )
 
 // 爱奇艺归档页：https://www.iqiyi.com/a_19rrht2ok5.html
-func RunIqyDetail(runType RunType) error {
+func RunIqyDetail(runType RunType, arg map[string]string) error {
 	var (
 		start, end string
 	)
@@ -71,7 +71,7 @@ func RunIqyDetail(runType RunType) error {
 
 	PrintInfo(fmt.Sprintf("采集到 %d 个视频", len(downLoadList)))
 
-	AnnieDownloadAll(downLoadList,runType)
+	AnnieDownloadAll(downLoadList, runType)
 
 	PrintInfo("全部下载完成")
 	return nil

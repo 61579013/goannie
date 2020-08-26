@@ -26,7 +26,7 @@ func GetCmdDataString(Info string, resData *string) error {
 func AnnieDownloadAll(urlList []map[string]string, runType RunType) {
 	for _, item := range urlList {
 		err := AnnieDownload(item["url"], runType.SavePath, runType.CookieFile)
-		if err != nil{
+		if err != nil {
 			PrintErrInfo(err.Error())
 		}
 	}
@@ -43,8 +43,35 @@ func AnnieDownload(url, savePath, cookiePath string) error {
 	if ckey != "" {
 		arg = append(arg, "-ckey", ckey)
 	}
-	arg = append(arg, []string{"-retry","3","-c", cookiePath, "-o", savePath, url}...)
+	arg = append(arg, []string{"-retry", "3", "-c", cookiePath, "-o", savePath, url}...)
 	cmd := exec.Command("annie", arg...)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	err := cmd.Start()
+	if err != nil {
+		return err
+	}
+	err = cmd.Wait()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func Aria2Download(url, savePath, saveFile, cookiePath string, maxConnectionPerServer int) error {
+	// -c 断点续传
+	// -m 失败重试次数。默认值为：5
+	// --retry-wait=<SEC> 失败重试间隔时间（单位：秒），默认值为：0
+	// -o 命名下载文件
+	// -x 设置每个下载最大的连接数
+	cmd := exec.Command("aria2c",
+		"-c", "-m", "5",
+		"--retry-wait=10", "-x",
+		fmt.Sprintf("%d", maxConnectionPerServer), `--header="cookie: `+GetTxtContent(cookiePath)+`"`,
+		"-d", savePath,
+		"-o", saveFile,
+		"--console-log-level=warn",
+		url)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	err := cmd.Start()
@@ -138,6 +165,36 @@ func GetFfmpeg() error {
 	return nil
 }
 
+// 请求 aria2
+func GetAria2() error {
+	IsAnniePath, err := IsExist(AppBinPath)
+	if err != nil {
+		return err
+	}
+	if !IsAnniePath {
+		if err = os.MkdirAll(AppBinPath, os.ModePerm); err != nil {
+			return nil
+		}
+	}
+	IsAria2File, err := IsExist(Aria2File)
+	if err != nil {
+		return err
+	}
+	if !IsAria2File {
+		PrintInfo("检查到该机器没有下载 aria2 启动下载")
+		dlerurl := godler.DlerUrl{
+			Url:      "http://image.68wu.cn/aria2/aria2c.exe",
+			SavePath: Aria2File,
+			IsBar:    true,
+		}
+		err := dlerurl.Download()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // 文件夹或文件是否存在
 func IsExist(path string) (bool, error) {
 	_, err := os.Stat(path)
@@ -170,10 +227,10 @@ func GetTxtContent(path string) string {
 
 // 设置环境变量
 func SetGoannieEnv() error {
-	if strings.Index(os.Getenv("PATH"),AppBinPath) == -1{
+	if strings.Index(os.Getenv("PATH"), AppBinPath) == -1 {
 		// 添加环境变量
-		err := os.Setenv("PATH",fmt.Sprintf("%s;%s",os.Getenv("PATH"),AppBinPath))
-		if err != nil{
+		err := os.Setenv("PATH", fmt.Sprintf("%s;%s", os.Getenv("PATH"), AppBinPath))
+		if err != nil {
 			return err
 		}
 	}

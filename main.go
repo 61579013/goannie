@@ -11,8 +11,8 @@ import (
 	"strings"
 )
 
-var goannieVersion = "v0.0.05"
-var goannieUpdateTime = "2020-08-25"
+var goannieVersion = "v0.0.07"
+var goannieUpdateTime = "2020-08-26"
 var goannieTitle = `
                                         __           
    __     ___      __      ___     ___ /\_\     __   
@@ -28,7 +28,7 @@ type UrlRegexp struct {
 	Name       string                 // 匹配名称
 	Info       string                 // 简介
 	UrlRegexps []*regexp.Regexp       // URL匹配表
-	Run        func(pf.RunType) error // 执行任务
+	Run        func(pf.RunType,map[string]string) error // 执行任务
 }
 
 // 平台结构体
@@ -61,7 +61,7 @@ func (pf Platform) printInfo() {
 var platformList []Platform
 
 func init() {
-	// 初始化支持平台
+	// 初始化支持平台https://v.qq.com/vplus/8e7410558116f585a0b6c87bb849e22c#uin=8e7410558116f585a0b6c87bb849e22c
 	platformList = []Platform{
 		{
 			"腾讯视频",
@@ -73,6 +73,28 @@ func init() {
 						regexp.MustCompile(`^(http|https)://v\.qq\.com/detail/\d+/\d+\.html.*?$`),
 					},
 					pf.RunTxDetail,
+				},{
+					"userList",
+					"作者视频 https://v.qq.com/s/videoplus/1790091432#uin=42ffd591994e622dd2e414ecc3137397",
+					[]*regexp.Regexp{
+						regexp.MustCompile(`^(http|https)://v\.qq\.com/biu/videoplus\?vuid=\d+.*?$`),
+						regexp.MustCompile(`^(http|https)://v\.qq\.com/s/videoplus/\d+.*?$`),
+						regexp.MustCompile(`^(http|https)://v\.qq\.com/x/bu/h5_user_center\?vuid=\d+.*?$`),
+					},
+					pf.RunTxUserList,
+				},
+			},
+			"./tengxun.txt",
+		},{
+			"火锅视频",
+			[]UrlRegexp{
+				{
+					"userList",
+					"作者视频 https://huoguo.qq.com/m/person.html?userid=18590596&ptag=huoguo&first=1&share_uin=23984053",
+					[]*regexp.Regexp{
+						regexp.MustCompile(`^(http|https)://huoguo\.qq\.com/m/person\.html\?userid=\d+.*?$`),
+					},
+					pf.RunHgUserList,
 				},
 			},
 			"./tengxun.txt",
@@ -138,6 +160,11 @@ func main() {
 		printErrInfo(err.Error())
 		exitInfo()
 	}
+	// 检查Aria2
+	if err = pf.GetAria2(); err != nil {
+		printErrInfo(err.Error())
+		exitInfo()
+	}
 GETSAVEPATH:
 	var savePath string
 	err = getSavePath(&savePath)
@@ -179,7 +206,7 @@ GETURL:
 		SavePath:   savePath,
 		CookieFile: platform.CookieFile,
 	}
-	err = subtask.Run(runType)
+	err = subtask.Run(runType, map[string]string{})
 	if err != nil {
 		printErrInfo(err.Error())
 		goto GETURL

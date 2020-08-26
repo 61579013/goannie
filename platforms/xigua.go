@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gitee.com/rock_rabbit/goannie/godler"
 	"github.com/fatih/color"
 	"io/ioutil"
 	"math"
@@ -15,14 +14,14 @@ import (
 )
 
 // TA的视频 https://www.ixigua.com/home/85383446500/video/
-func RunXgUserList(runType RunType) error {
+func RunXgUserList(runType RunType, arg map[string]string) error {
 	page, count, err := xgGetUserListPage(runType.Url)
 	if err != nil {
 		return err
 	}
 	PrintInfo(fmt.Sprintf("总页数：%d  每页个数：%d  总个数：%d", page, 30, count))
 	var (
-		start, end string
+		start, end, maxConnection string
 	)
 	if err = GetCmdDataString("请输入起始页", &start); err != nil {
 		return err
@@ -38,15 +37,12 @@ func RunXgUserList(runType RunType) error {
 	if err != nil || endInt > page || endInt < startInt || endInt <= 0 {
 		return errors.New("结束页格式错误")
 	}
-	//if err = GetCmdDataString("请输入间隔时间（s）", &sleep); err != nil {
-	//	return err
-	//}
-	//sleepTime, err := strconv.ParseFloat(sleep, 2)
-	//if err != nil {
-	//	return errors.New("间隔时间格式错误")
-	//}
-	//startInt := 1
-	//endInt := 1
+	if err = GetCmdDataString("请输入最大连接数", &maxConnection); err != nil {
+		return err
+	}
+	if _, err = strconv.Atoi(maxConnection); err != nil {
+		return errors.New("最大连接数格式错误")
+	}
 	sleepTime := .5
 	resUserID := regexp.MustCompile("^(http|https)://www\\.ixigua\\.com/home/(\\d+)/").FindStringSubmatch(runType.Url)
 	if len(resUserID) < 3 {
@@ -66,12 +62,12 @@ func RunXgUserList(runType RunType) error {
 		}
 		time.Sleep(time.Second * time.Duration(sleepTime))
 		PrintInfof(fmt.Sprintf(
-			"\r起始页：%d 结束页：%d 当前页：%d 已采集：%d个 作者名称：%s 耗时：%d秒 时间间隔：%.2f秒",
-			startInt, endInt, onPage, len(downLoadList), screenName, (time.Now().Unix() - startTime), sleepTime,
+			"\rcurrent: %d gather: %d author: %s duration: %ds sleep：%.2fs",
+			onPage, len(downLoadList), screenName, (time.Now().Unix() - startTime), sleepTime,
 		))
 		if errorMsg != "--" {
 			color.Set(color.FgRed, color.Bold)
-			fmt.Printf(" 错误次数：%d 错误信息：%s", errorCount, errorMsg)
+			fmt.Printf(" errCout：%d errMsg：%s", errorCount, errorMsg)
 			color.Unset()
 		}
 
@@ -91,6 +87,9 @@ func RunXgUserList(runType RunType) error {
 				})
 			}
 		}
+		if !jsonData.HasMore && len(jsonData.Data) == 0 {
+			break
+		}
 		if len(jsonData.Data) == 0 {
 			errorCount++
 			errorMsg = "获取信息错误"
@@ -105,8 +104,8 @@ func RunXgUserList(runType RunType) error {
 	for _, video := range downLoadList {
 		oneRunType := runType
 		oneRunType.Url = video["url"]
-		err := RunXgOne(oneRunType)
-		if err !=nil{
+		err := RunXgOne(oneRunType, map[string]string{})
+		if err != nil {
 			PrintErrInfo(err.Error())
 		}
 	}
@@ -194,7 +193,7 @@ func xgGetUserListPage(url string) (int, int, error) {
 }
 
 // 西瓜单视频 https://www.ixigua.com/6832194590221533707
-func RunXgOne(runType RunType) error {
+func RunXgOne(runType RunType, arg map[string]string) error {
 	itemID, err := xgGetItemID(runType.Url)
 	if err != nil {
 		return err
@@ -217,15 +216,14 @@ func RunXgOne(runType RunType) error {
 	}
 	dlpt.Init(downloadUrl)
 	dlpt.Print()
-	dler := &godler.DlerUrl{
-		Url:      downloadUrl,
-		SavePath: fmt.Sprintf("%s\\%s.mp4", runType.SavePath, title),
-		IsBar:    true,
-		Client:   http.Client{Timeout: time.Second * 180},
-		TimeOut:  time.Second * 180,
-		OneThreading: true,
+	maxConnectionPerServer := 1
+	if _, ok := arg["maxConnectionPerServer"]; ok {
+		maxConnectionPerServer, err = strconv.Atoi(arg["maxConnectionPerServer"])
+		if err != nil {
+			return err
+		}
 	}
-	err = dler.Download()
+	err = Aria2Download(downloadUrl, runType.SavePath, fmt.Sprintf("%s.mp4", title), runType.CookieFile, maxConnectionPerServer)
 	if err != nil {
 		return err
 	}
