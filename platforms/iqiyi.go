@@ -61,7 +61,12 @@ func RunIqyDetail(runType RunType, arg map[string]string) error {
 			continue
 		}
 		for _, item := range resData.Data[fmt.Sprintf("%d", startYear)] {
+			isVID := IsVideoID("iqiyi", item.Vid)
+			if isVID && runType.IsDeWeight {
+				continue
+			}
 			downLoadList = append(downLoadList, map[string]string{
+				"vid":   item.Vid,
 				"title": item.Name,
 				"url":   item.PlayURL,
 			})
@@ -71,7 +76,7 @@ func RunIqyDetail(runType RunType, arg map[string]string) error {
 
 	PrintInfo(fmt.Sprintf("采集到 %d 个视频", len(downLoadList)))
 
-	AnnieDownloadAll(downLoadList, runType)
+	AnnieDownloadAll(downLoadList, runType, "iqiyi")
 
 	PrintInfo("全部下载完成")
 	return nil

@@ -89,7 +89,12 @@ func RunTxDetail(runType RunType, arg map[string]string) error {
 			continue
 		}
 		for _, item := range resData.PlaylistItem.VideoPlayList {
+			isVID := IsVideoID("tengxun", item.ID)
+			if isVID && runType.IsDeWeight {
+				continue
+			}
 			downLoadList = append(downLoadList, map[string]string{
+				"vid":item.ID,
 				"title": item.Title,
 				"url":   item.PlayURL,
 			})
@@ -97,7 +102,7 @@ func RunTxDetail(runType RunType, arg map[string]string) error {
 	}
 	PrintInfo(fmt.Sprintf("采集到 %d 个视频", len(downLoadList)))
 
-	AnnieDownloadAll(downLoadList, runType)
+	AnnieDownloadAll(downLoadList, runType, "tengxun")
 
 	PrintInfo("全部下载完成")
 	return nil
@@ -109,7 +114,7 @@ func RunTxUserList(runType RunType, arg map[string]string) error {
 	if err != nil {
 		return err
 	}
-	page, count, err := txGetUserListPage(vuid,  0, 20)
+	page, count, err := txGetUserListPage(vuid, 0, 20)
 	if err != nil {
 		return err
 	}
@@ -142,7 +147,7 @@ func RunTxUserList(runType RunType, arg map[string]string) error {
 			break
 		}
 		time.Sleep(time.Second * time.Duration(sleepTime))
-		resData, err := txGetVideoplusData(vuid, (startInt-1)*10)
+		resData, err := txGetVideoplusData(vuid, (startInt-1)*10, 0)
 		if err != nil {
 			errorCount++
 			errorMsg = err.Error()
@@ -150,7 +155,12 @@ func RunTxUserList(runType RunType, arg map[string]string) error {
 		}
 		if len(resData.Body.Modules) > 0 && len(resData.Body.Modules[0].Sections) > 0 {
 			for _, item := range resData.Body.Modules[0].Sections[0].BlockList.Blocks {
+				isVID := IsVideoID("tengxun", item.Data.Vid)
+				if isVID && runType.IsDeWeight {
+					continue
+				}
 				downLoadList = append(downLoadList, map[string]string{
+					"vid":   item.Data.Vid,
 					"title": item.Data.Title,
 					"url":   fmt.Sprintf("https://v.qq.com/x/page/%s.html", item.Data.Vid),
 				})
@@ -170,16 +180,75 @@ func RunTxUserList(runType RunType, arg map[string]string) error {
 	}
 	fmt.Println("")
 	PrintInfo(fmt.Sprintf("采集到 %d 个视频", len(downLoadList)))
-	AnnieDownloadAll(downLoadList, runType)
+	AnnieDownloadAll(downLoadList, runType, "tengxun")
 
 	PrintInfo("全部下载完成")
+	return nil
+}
+
+// 看作者作品列表	look https://v.qq.com/s/videoplus/1790091432
+func RunLookTxUserList(runType RunType, arg map[string]string) error {
+	runType.Url = strings.Replace(runType.Url, "look ", "", -1)
+	vuid, err := txGetVuid(runType.Url)
+	if err != nil {
+		return err
+	}
+	page, count, err := txGetUserListPage(vuid, 0, 20)
+	if err != nil {
+		return err
+	}
+	PrintInfo(fmt.Sprintf("\r总页数：%d  每页个数：%d  总个数：%d", page, 10, count))
+	startInt := 1
+	endInt := page
+	var downLoadList []map[string]string
+	screenName := "--"
+	startTime := time.Now().Unix()
+	errorMsg := "--"
+	errorCount := 0
+	sleepTime := .5
+	for {
+		if startInt > endInt {
+			break
+		}
+		time.Sleep(time.Second * time.Duration(sleepTime))
+		resData, err := txGetVideoplusData(vuid, (startInt-1)*10, 0)
+		if err != nil {
+			errorCount++
+			errorMsg = err.Error()
+			continue
+		}
+		if len(resData.Body.Modules) > 0 && len(resData.Body.Modules[0].Sections) > 0 {
+			if len(resData.Body.Modules[0].Sections[0].BlockList.Blocks) > 0 {
+				downLoadList = append(downLoadList, map[string]string{
+					"page":  fmt.Sprintf("%d", startInt),
+					"title": resData.Body.Modules[0].Sections[0].BlockList.Blocks[0].Data.Title,
+				})
+				screenName = resData.Body.Modules[0].Sections[0].BlockList.Blocks[0].Data.CardInfo.UserInfo.UserName
+			}
+		}
+		PrintInfof(fmt.Sprintf(
+			"\rcurrent: %d gather: %d author: %s duration: %ds sleep：%.2fs",
+			startInt, len(downLoadList), screenName, (time.Now().Unix() - startTime), sleepTime,
+		))
+		if errorMsg != "--" {
+			color.Set(color.FgRed, color.Bold)
+			fmt.Printf(" errCout：%d errMsg：%s", errorCount, errorMsg)
+			color.Unset()
+		}
+		startInt++
+	}
+	fmt.Println("")
+	PrintInfo(fmt.Sprintf("采集到 %d 个视频", len(downLoadList)))
+	for _, v := range downLoadList {
+		PrintInfo(fmt.Sprintf("第 %s 页 %s", v["page"], v["title"]))
+	}
 	return nil
 }
 
 // 通过 url 获取 Vuid
 func txGetVuid(url string) (string, error) {
 	regexps := []*regexp.Regexp{
-		regexp.MustCompile(`^(http|https)://v\.qq\.com/biu/videoplus\?vuid=(\d+)`),
+		regexp.MustCompile(`^(http|https)://haokan\.baidu\.com/author/(\d+)`),
 		regexp.MustCompile(`^(http|https)://v\.qq\.com/s/videoplus/(\d+)`),
 		regexp.MustCompile(`^(http|https)://v\.qq\.com/x/bu/h5_user_center\?vuid=(\d+)`),
 	}
@@ -193,7 +262,8 @@ func txGetVuid(url string) (string, error) {
 	return "", errors.New("获取Vuid失败")
 }
 
-func txGetVideoplusData(vuid string, offset int) (*TengxunUserVideoList, error) {
+// 请求腾讯作者作品列表API
+func txGetVideoplusData(vuid string, offset, errorCount int) (*TengxunUserVideoList, error) {
 	api := fmt.Sprintf("https://nodeyun.video.qq.com/x/api/videoplus/data?type=all&vuid=%s&last_vid_position=%d&offset=%d&index_context=score&_=%d",
 		vuid, offset, offset, (time.Now().Unix() * 1000),
 	)
@@ -211,6 +281,9 @@ func txGetVideoplusData(vuid string, offset int) (*TengxunUserVideoList, error) 
 	}
 	defer resP.Body.Close()
 	if resP.StatusCode != 200 {
+		if errorCount < 3 {
+			return txGetVideoplusData(vuid, offset, errorCount+1)
+		}
 		return &jsonData, errors.New("请求失败")
 	}
 	body, err := ioutil.ReadAll(resP.Body)
@@ -228,10 +301,12 @@ func txGetVideoplusData(vuid string, offset int) (*TengxunUserVideoList, error) 
 
 }
 
+// 腾讯作者作品页数检查
 func txGetUserListPage(vuid string, s, b int) (int, int, error) {
-	resData, err := txGetVideoplusData(vuid, s*10)
+	resData, err := txGetVideoplusData(vuid, s*10, 0)
 	if err != nil {
-		return 0, 0, err
+		count := s * 10
+		return s + 1, count, nil
 	}
 	PrintInfof(fmt.Sprintf("\r 检查页数----> 当前页 %d", s+1))
 	if resData.Body.HasNextPage {

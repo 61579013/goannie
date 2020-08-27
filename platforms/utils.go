@@ -1,10 +1,13 @@
 package platforms
 
 import (
+	"encoding/json"
+	"errors"
 	"fmt"
 	"gitee.com/rock_rabbit/goannie/godler"
 	"github.com/fatih/color"
 	"io/ioutil"
+	"net/http"
 	"os"
 	"os/exec"
 	"strings"
@@ -23,17 +26,19 @@ func GetCmdDataString(Info string, resData *string) error {
 }
 
 // 使用annie批量下载
-func AnnieDownloadAll(urlList []map[string]string, runType RunType) {
+func AnnieDownloadAll(urlList []map[string]string, runType RunType, pt string) {
 	for _, item := range urlList {
-		err := AnnieDownload(item["url"], runType.SavePath, runType.CookieFile)
+		err := AnnieDownload(item["url"], runType.SavePath, runType.CookieFile, runType.DefaultCookie)
 		if err != nil {
 			PrintErrInfo(err.Error())
+		} else {
+			AddVideoID(pt, item["vid"])
 		}
 	}
 }
 
 // 使用annie下载
-func AnnieDownload(url, savePath, cookiePath string) error {
+func AnnieDownload(url, savePath, cookiePath, DefaultCookie string) error {
 	arg := []string{}
 	ccode := GetTxtContent("./ccode.txt")
 	ckey := GetTxtContent("./ckey.txt")
@@ -43,7 +48,12 @@ func AnnieDownload(url, savePath, cookiePath string) error {
 	if ckey != "" {
 		arg = append(arg, "-ckey", ckey)
 	}
-	arg = append(arg, []string{"-retry", "3", "-c", cookiePath, "-o", savePath, url}...)
+	// COOKE 设定
+	onCookie := cookiePath
+	if GetTxtContent(cookiePath) == "" {
+		onCookie = DefaultCookie
+	}
+	arg = append(arg, []string{"-retry", "3", "-c", onCookie, "-o", savePath, url}...)
 	cmd := exec.Command("annie", arg...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
@@ -235,4 +245,163 @@ func SetGoannieEnv() error {
 		}
 	}
 	return nil
+}
+
+// 获取跳转真实地址
+func GetRealUrl(url string) (string, error) {
+	newClient := Client
+	newClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+		return http.ErrUseLastResponse
+	}
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Set("user-agent", UserAgentPc)
+	resP, err := newClient.Do(req)
+	if err != nil {
+		return "", err
+	}
+	defer resP.Body.Close()
+	if resP.StatusCode == 301 || resP.StatusCode == 302 {
+		return resP.Header.Get("location"), nil
+	}
+	return "", errors.New("获取跳转真实地址失败")
+}
+
+//对比库是否存在视频ID
+func IsVideoID(pt, vid string) bool {
+	resData, err := GetVideoID(pt)
+	if err != nil {
+		return false
+	}
+	for _, i := range *resData {
+		if i == vid {
+			return true
+		}
+	}
+	return false
+}
+
+// 存储已下载的视频ID
+func AddVideoID(pt, vid string) (bool, error) {
+	resData, err := GetVideoID(pt)
+	if err != nil {
+		return false, err
+	}
+	for _, i := range *resData {
+		if i == vid {
+			return true, nil
+		}
+	}
+	*resData = append(*resData, vid)
+	AppDataFile := fmt.Sprintf("%s\\%s.json", AppDataPath, pt)
+	f, err := os.OpenFile(AppDataFile, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666)
+	if err != nil {
+		return false, err
+	}
+	defer f.Close()
+	content, err := json.Marshal(*resData)
+	if err != nil {
+		return false, err
+	}
+	_, err = f.Write(content)
+	if err != nil {
+		return false, err
+	}
+	return false, nil
+}
+
+// 获取已下载的视频ID
+func GetVideoID(pt string) (*[]string, error) {
+	AppDataFile := fmt.Sprintf("%s\\%s.json", AppDataPath, pt)
+	IsAppDataPath, err := IsExist(AppDataPath)
+	if err != nil {
+		return nil, err
+	}
+	if !IsAppDataPath {
+		if err = os.MkdirAll(AppDataPath, os.ModePerm); err != nil {
+			return nil, nil
+		}
+	}
+	if isDataFile, _ := IsExist(AppDataFile); !isDataFile {
+		// 创建
+		err := CreactVideoID(pt)
+		if err != nil {
+			return nil, err
+		}
+		return &[]string{}, nil
+	}
+	file, err := os.Open(AppDataFile)
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+	resData, err := ioutil.ReadAll(file)
+	if err != nil {
+		return nil, err
+	}
+	var data []string
+	err = json.Unmarshal(resData, &data)
+	if err != nil {
+		// 这里 json 格式错误 覆盖写
+		file.Close()
+		err := CreactVideoID(pt)
+		if err != nil {
+			return nil, err
+		}
+		return &[]string{}, nil
+	}
+	return &data, nil
+}
+
+func CreactVideoID(pt string) error {
+	// 创建
+	AppDataFile := fmt.Sprintf("%s\\%s.json", AppDataPath, pt)
+	file, err := os.Create(AppDataFile)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	_, err = file.Write([]byte("[]"))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func PrintVideoIDCount() {
+	ptList := []map[string]string{
+		{
+			"name":  "腾讯视频",
+			"pt":    "tengxun",
+			"count": "",
+		}, {
+			"name":  "爱奇艺视频",
+			"pt":    "iqiyi",
+			"count": "",
+		}, {
+			"name":  "好看视频",
+			"pt":    "haokan",
+			"count": "",
+		}, {
+			"name":  "哔哩哔哩",
+			"pt":    "bilibili",
+			"count": "",
+		}, {
+			"name":  "西瓜视频",
+			"pt":    "xigua",
+			"count": "",
+		},
+	}
+	for idx,item := range ptList{
+		data,err := GetVideoID(item["pt"])
+		if err != nil{
+			ptList[idx]["count"] = "--"
+		}else{
+			ptList[idx]["count"] = fmt.Sprintf("%d",len(*data))
+		}
+		fmt.Printf("%s：%s  ",item["name"],ptList[idx]["count"])
+	}
+	fmt.Println("")
 }

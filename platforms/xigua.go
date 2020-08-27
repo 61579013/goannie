@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -81,7 +82,12 @@ func RunXgUserList(runType RunType, arg map[string]string) error {
 		screenName = jsonData.UserInfo.Name
 		if onPage >= startInt {
 			for _, item := range jsonData.Data {
+				isVID := IsVideoID("xigua", item.GroupIdStr)
+				if isVID && runType.IsDeWeight {
+					continue
+				}
 				downLoadList = append(downLoadList, map[string]string{
+					"vid":   item.GroupIdStr,
 					"title": item.Title,
 					"url":   item.ArticleURL,
 				})
@@ -107,6 +113,8 @@ func RunXgUserList(runType RunType, arg map[string]string) error {
 		err := RunXgOne(oneRunType, map[string]string{})
 		if err != nil {
 			PrintErrInfo(err.Error())
+		}else{
+			AddVideoID("xigua", video["vid"])
 		}
 	}
 
@@ -115,6 +123,80 @@ func RunXgUserList(runType RunType, arg map[string]string) error {
 	return nil
 }
 
+// 看作者作品列表 look https://www.ixigua.com/home/85383446500/video/
+func RunLookXgUserList(runType RunType, arg map[string]string) error {
+	runType.Url = strings.Replace(runType.Url, "look ", "", -1)
+	page, count, err := xgGetUserListPage(runType.Url)
+	if err != nil {
+		return err
+	}
+	PrintInfo(fmt.Sprintf("总页数：%d  每页个数：%d  总个数：%d", page, 30, count))
+	sleepTime := .5
+	resUserID := regexp.MustCompile("^(http|https)://www\\.ixigua\\.com/home/(\\d+)/").FindStringSubmatch(runType.Url)
+	if len(resUserID) < 3 {
+		return errors.New("西瓜获取UserID失败")
+	}
+	userID := resUserID[2]
+	startInt := 1
+	endInt := page
+	var downLoadList []map[string]string
+	onPage := 1
+	maxBehotTime := 0
+	screenName := "--"
+	startTime := time.Now().Unix()
+	errorMsg := "--"
+	errorCount := 0
+	for {
+		if onPage > endInt {
+			break
+		}
+		time.Sleep(time.Second * time.Duration(sleepTime))
+		PrintInfof(fmt.Sprintf(
+			"\rcurrent: %d gather: %d author: %s duration: %ds sleep：%.2fs",
+			onPage, len(downLoadList), screenName, (time.Now().Unix() - startTime), sleepTime,
+		))
+		if errorMsg != "--" {
+			color.Set(color.FgRed, color.Bold)
+			fmt.Printf(" errCout：%d errMsg：%s", errorCount, errorMsg)
+			color.Unset()
+		}
+
+		apiUrl := fmt.Sprintf("https://m.ixigua.com/video/app/user/home/?to_user_id=%s&format=json&preActiveKey=home&max_behot_time=%d", userID, maxBehotTime)
+		jsonData, err := xgGetUserListHome(apiUrl, runType.CookieFile, 0)
+		if err != nil {
+			errorCount++
+			errorMsg = err.Error()
+			continue
+		}
+		screenName = jsonData.UserInfo.Name
+		if onPage >= startInt {
+			if len(jsonData.Data) > 0 {
+				downLoadList = append(downLoadList, map[string]string{
+					"title": jsonData.Data[0].Title,
+					"page":  fmt.Sprintf("%d", onPage),
+				})
+			}
+		}
+		if !jsonData.HasMore && len(jsonData.Data) == 0 {
+			break
+		}
+		if len(jsonData.Data) == 0 {
+			errorCount++
+			errorMsg = "获取信息错误"
+			continue
+		}
+		maxBehotTime = jsonData.Data[len(jsonData.Data)-1 : len(jsonData.Data)][0].BehotTime
+		onPage++
+	}
+	fmt.Println("")
+	PrintInfo(fmt.Sprintf("采集到 %d 个视频", len(downLoadList)))
+	for _, v := range downLoadList {
+		PrintInfo(fmt.Sprintf("第 %s 页 %s", v["page"], v["title"]))
+	}
+	return nil
+}
+
+// 请求作者作品列表api
 func xgGetUserListHome(url, cookiePath string, errorCount int) (*XiguaUserList, error) {
 	var jsonData XiguaUserList
 	req, err := http.NewRequest("GET", url, nil)

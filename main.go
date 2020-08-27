@@ -11,8 +11,8 @@ import (
 	"strings"
 )
 
-var goannieVersion = "v0.0.07"
-var goannieUpdateTime = "2020-08-26"
+var goannieVersion = "v0.0.08"
+var goannieUpdateTime = "2020-08-27"
 var goannieTitle = `
                                         __           
    __     ___      __      ___     ___ /\_\     __   
@@ -25,17 +25,18 @@ var goannieTitle = `
 
 // 平台子任务结构体
 type UrlRegexp struct {
-	Name       string                 // 匹配名称
-	Info       string                 // 简介
-	UrlRegexps []*regexp.Regexp       // URL匹配表
-	Run        func(pf.RunType,map[string]string) error // 执行任务
+	Name       string                                    // 匹配名称
+	Info       string                                    // 简介
+	UrlRegexps []*regexp.Regexp                          // URL匹配表
+	Run        func(pf.RunType, map[string]string) error // 执行任务
 }
 
 // 平台结构体
 type Platform struct {
-	Name       string      // 平台名称
-	UrlRegexps []UrlRegexp // URL匹配表
-	CookieFile string
+	Name          string      // 平台名称
+	UrlRegexps    []UrlRegexp // URL匹配表
+	CookieFile    string
+	DefaultCookie string
 }
 
 // 匹配url
@@ -52,9 +53,24 @@ func (pf Platform) isUrl(url string) (bool, UrlRegexp) {
 
 // 打印信息
 func (pf Platform) printInfo() {
-	fmt.Printf("|----------------- %s -----------------|\n", pf.Name)
+	color.Set(color.FgBlue, color.Bold)
+	fmt.Printf("|-----------------\t ")
+	color.Unset()
+	color.Set(color.FgHiMagenta, color.Bold)
+	fmt.Printf(pf.Name)
+	color.Unset()
+	color.Set(color.FgBlue, color.Bold)
+	fmt.Printf(" \t-----------------|\n")
+	color.Unset()
 	for _, item := range pf.UrlRegexps {
-		fmt.Printf("task: %s\tinfo: %s\n", item.Name, item.Info)
+		color.Set(color.FgBlue, color.Bold)
+		fmt.Printf("task: ")
+		color.Unset()
+		fmt.Printf(item.Name)
+		color.Set(color.FgBlue, color.Bold)
+		fmt.Printf("\tinfo: ")
+		color.Unset()
+		fmt.Printf(item.Info + "\n")
 	}
 }
 
@@ -68,43 +84,61 @@ func init() {
 			[]UrlRegexp{
 				{
 					"detail",
-					"腾讯剧集页 https://v.qq.com/detail/5/52852.html",
+					"腾讯剧集页	https://v.qq.com/detail/5/52852.html",
 					[]*regexp.Regexp{
 						regexp.MustCompile(`^(http|https)://v\.qq\.com/detail/\d+/\d+\.html.*?$`),
 					},
 					pf.RunTxDetail,
-				},{
+				}, {
 					"userList",
-					"作者视频 https://v.qq.com/s/videoplus/1790091432#uin=42ffd591994e622dd2e414ecc3137397",
+					"作者视频		https://v.qq.com/s/videoplus/1790091432",
 					[]*regexp.Regexp{
 						regexp.MustCompile(`^(http|https)://v\.qq\.com/biu/videoplus\?vuid=\d+.*?$`),
 						regexp.MustCompile(`^(http|https)://v\.qq\.com/s/videoplus/\d+.*?$`),
 						regexp.MustCompile(`^(http|https)://v\.qq\.com/x/bu/h5_user_center\?vuid=\d+.*?$`),
 					},
 					pf.RunTxUserList,
+				}, {
+					"lookList",
+					"看作者作品列表	look https://v.qq.com/s/videoplus/1790091432",
+					[]*regexp.Regexp{
+						regexp.MustCompile(`^look (http|https)://v\.qq\.com/biu/videoplus\?vuid=\d+.*?$`),
+						regexp.MustCompile(`^look (http|https)://v\.qq\.com/s/videoplus/\d+.*?$`),
+						regexp.MustCompile(`^look (http|https)://v\.qq\.com/x/bu/h5_user_center\?vuid=\d+.*?$`),
+					},
+					pf.RunLookTxUserList,
 				},
 			},
 			"./tengxun.txt",
-		},{
+			"",
+		}, {
 			"火锅视频",
 			[]UrlRegexp{
 				{
 					"userList",
-					"作者视频 https://huoguo.qq.com/m/person.html?userid=18590596&ptag=huoguo&first=1&share_uin=23984053",
+					"作者视频		https://huoguo.qq.com/m/person.html?userid=18590596",
 					[]*regexp.Regexp{
 						regexp.MustCompile(`^(http|https)://huoguo\.qq\.com/m/person\.html\?userid=\d+.*?$`),
 					},
 					pf.RunHgUserList,
+				}, {
+					"lookList",
+					"看作者作品列表	look https://huoguo.qq.com/m/person.html?userid=18590596",
+					[]*regexp.Regexp{
+						regexp.MustCompile(`^look (http|https)://huoguo\.qq\.com/m/person\.html\?userid=\d+.*?$`),
+					},
+					pf.RunLookHgUserList,
 				},
 			},
 			"./tengxun.txt",
+			"",
 		},
 		{
 			"爱奇艺视频",
 			[]UrlRegexp{
 				{
 					"detail",
-					"爱奇艺剧集页 https://www.iqiyi.com/a_19rrht2ok5.html",
+					"爱奇艺剧集页	https://www.iqiyi.com/a_19rrht2ok5.html",
 					[]*regexp.Regexp{
 						regexp.MustCompile(`^(http|https)://www\.iqiyi\.com/a_\w+\.html.*?$`),
 					},
@@ -112,13 +146,14 @@ func init() {
 				},
 			},
 			"./iqiyi.txt",
+			"",
 		},
 		{
 			"西瓜视频",
 			[]UrlRegexp{
 				{
 					"one",
-					"单视频 https://www.ixigua.com/6832194590221533707",
+					"单视频		https://www.ixigua.com/6832194590221533707",
 					[]*regexp.Regexp{
 						regexp.MustCompile(`^(http|https)://www\.ixigua\.com/\d+.*?$`),
 						regexp.MustCompile(`^(http|https)://m\.ixigua\.com/\d+.*?$`),
@@ -127,17 +162,56 @@ func init() {
 						regexp.MustCompile(`^(http|https)://toutiao\.com/group/\d+/.*?$`),
 					},
 					pf.RunXgOne,
-				},{
+				}, {
 					"userList",
-					"TA的视频 https://www.ixigua.com/home/85383446500/video/",
+					"TA的视频		https://www.ixigua.com/home/85383446500/video/",
 					[]*regexp.Regexp{
 						regexp.MustCompile(`^(http|https)://www\.ixigua\.com/home/\d+/video.*?$`),
-						regexp.MustCompile(`^(http|https)://www\.ixigua\.com/home/\d+/($|\?.*?$)`),
+						regexp.MustCompile(`^(http|https)://www\.ixigua\.com/home/\d+($|/$|/\?.*?$|\?.*?$)`),
 					},
 					pf.RunXgUserList,
+				}, {
+					"lookList",
+					"看作者作品列表	look https://www.ixigua.com/home/85383446500/video/",
+					[]*regexp.Regexp{
+						regexp.MustCompile(`^look (http|https)://www\.ixigua\.com/home/\d+/video.*?$`),
+						regexp.MustCompile(`^look (http|https)://www\.ixigua\.com/home/\d+/($|\?.*?$)`),
+					},
+					pf.RunLookXgUserList,
 				},
 			},
 			"./xigua.txt",
+			"",
+		},
+		{
+			"好看视频",
+			[]UrlRegexp{
+				{
+					"userList",
+					"作者视频	https://haokan.baidu.com/author/1649278643844524",
+					[]*regexp.Regexp{
+						regexp.MustCompile(`^(http|https)://haokan\.baidu\.com/author/\d+.*?$`),
+					},
+					pf.RunHkUserList,
+				},
+			},
+			"./haokan.txt",
+			"",
+		},
+		{
+			"哔哩哔哩",
+			[]UrlRegexp{
+				{
+					"userList",
+					"TA的视频	https://space.bilibili.com/337312411",
+					[]*regexp.Regexp{
+						regexp.MustCompile(`^(http|https)://space\.bilibili\.com/\d+.*?$`),
+					},
+					pf.RunBliUserList,
+				},
+			},
+			"./bilibili.txt",
+			"Hm_lvt_8a6e55dbd2870f0f5bc9194cddf32a02=1585388744; _uuid=FEA617EA-B2C3-B04F-885E-46ABFAE4F7D805867infoc; buvid3=2811A771-C069-4E94-B8FA-F782D325D66D53928infoc; sid=k0i58z3h; CURRENT_FNVAL=16; LIVE_BUVID=AUTO4815859721196971; rpdid=|(J~|~mR~u~R0J'ul)lm~kuJl; DedeUserID=73471687; DedeUserID__ckMd5=0faa2eb95831029d; SESSDATA=56f9a3c2%2C1601524186%2C0ae0b*41; bili_jct=5f7ce56db63cc720b6ceffebd133e796; CURRENT_QUALITY=120; bp_video_offset_73471687=419852075596227754; PVID=2",
 		},
 	}
 }
@@ -182,6 +256,13 @@ GETSAVEPATH:
 			goto GETSAVEPATH
 		}
 	}
+	// 是否去重
+	var isDeWeight string
+	isDeWeightBool := true
+	err = getIsDeWeight(&isDeWeight)
+	if isDeWeight == "no" {
+		isDeWeightBool = false
+	}
 GETURL:
 	var url string
 	err = getUrl(&url)
@@ -192,7 +273,7 @@ GETURL:
 	platform, subtask, err := getUrlPlatform(url)
 	if err != nil {
 		// 尝试直接使用 annie
-		err = pf.AnnieDownload(url, savePath, "")
+		err = pf.AnnieDownload(url, savePath, "", "")
 		if err != nil {
 			printErrInfo(err.Error())
 		}
@@ -202,9 +283,11 @@ GETURL:
 	fmt.Printf("平台：%s  子任务：%s\n", platform.Name, subtask.Name)
 	color.Unset()
 	runType := pf.RunType{
-		Url:        url,
-		SavePath:   savePath,
-		CookieFile: platform.CookieFile,
+		Url:           url,
+		SavePath:      savePath,
+		CookieFile:    platform.CookieFile,
+		DefaultCookie: platform.DefaultCookie,
+		IsDeWeight:    isDeWeightBool,
 	}
 	err = subtask.Run(runType, map[string]string{})
 	if err != nil {
@@ -266,6 +349,20 @@ func getSavePath(savePath *string) error {
 	return nil
 }
 
+// 是否去重
+func getIsDeWeight(isDeWeight *string) error {
+	color.Set(color.FgGreen, color.Bold)
+	fmt.Printf("$ 是否去重？ yes or no (yse)：")
+	color.Unset()
+	reader := bufio.NewReader(os.Stdin)
+	data, _, err := reader.ReadLine()
+	if err != nil {
+		return err
+	}
+	*isDeWeight = strings.Replace(string(data), "\n", "", -1)
+	return nil
+}
+
 // 打印欢迎语
 func printHello() {
 	color.Set(color.FgGreen, color.Bold)
@@ -273,16 +370,23 @@ func printHello() {
 	fmt.Println(goannieTitle)
 	color.Set(color.FgMagenta, color.Bold)
 	fmt.Printf("	version: %s	updateTime: %s\n\n", goannieVersion, goannieUpdateTime)
-	color.Set(color.FgBlue, color.Bold)
+	color.Set(color.FgHiBlue, color.Bold)
 	fmt.Println("支持平台")
 	for _, item := range platformList {
 		item.printInfo()
+		color.Set(color.FgHiBlack, color.Bold)
 		fmt.Printf("cookie 设置：在goannie.exe同级目录中新建 %s 写入cookie=xxx;xxx=xxx;格式即可。\n", item.CookieFile)
-		if item.Name == "腾讯视频"{
+		if item.Name == "腾讯视频" {
 			fmt.Println("ccode 和 ckey 设置：在goannie.exe同级目录中新建 ccode.txt 和 ckey.txt 写入其中即可。")
 		}
+		color.Unset()
 		fmt.Println("")
 	}
+	color.Set(color.FgHiBlue, color.Bold)
+	fmt.Println("下载统计")
+	color.Unset()
+	pf.PrintVideoIDCount()
+	fmt.Println("")
 }
 
 // 打印错误信息

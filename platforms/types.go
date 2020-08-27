@@ -14,6 +14,7 @@ var UserAgentPc = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 
 var UserAgentWap = "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1 Edg/84.0.4147.135"
 var AppPath = fmt.Sprintf("%s\\goannie", os.Getenv("APPDATA"))
 var AppBinPath = fmt.Sprintf("%s\\bin", AppPath)
+var AppDataPath = fmt.Sprintf("%s\\data", AppPath)
 var AnnieFile = fmt.Sprintf("%s\\annie.exe", AppBinPath)
 var FfmpegFile = fmt.Sprintf("%s\\ffmpeg.exe", AppBinPath)
 var Aria2File = fmt.Sprintf("%s\\aria2c.exe", AppBinPath)
@@ -102,9 +103,11 @@ func (d DownloadPrint) Print() {
 }
 
 type RunType struct {
-	Url        string
-	SavePath   string
-	CookieFile string
+	Url           string
+	SavePath      string
+	CookieFile    string
+	DefaultCookie string
+	IsDeWeight    bool
 }
 
 // 腾讯归档API
@@ -142,7 +145,7 @@ type TengxunPlaysource struct {
 	Msg   string `json:"msg"`
 }
 
-// 爱奇艺作者作品列表API
+// 腾讯作者作品列表API
 type TengxunUserVideoList struct {
 	RequestID int    `json:"requestId"`
 	Ret       int    `json:"ret"`
@@ -279,7 +282,6 @@ type TengxunUserVideoList struct {
 	} `json:"body"`
 }
 
-
 // 爱奇艺归档API
 type IqiyiSvlistinfo struct {
 	Code string `json:"code"`
@@ -340,12 +342,13 @@ type XiguaUserList struct {
 	UserInfo struct {
 		Name string `json:"name"`
 	} `json:"user_info"`
-	Message          string `json:"message"`
+	Message string `json:"message"`
 	HasMore bool   `json:"has_more"`
-	Data             []struct {
+	Data    []struct {
 		MediaName  string `json:"media_name"`
 		Title      string `json:"title"`
 		ArticleURL string `json:"article_url"`
+		GroupIdStr string `json:"group_id_str"`
 		BehotTime  int    `json:"behot_time"`
 		UserInfo   struct {
 			Name string `json:"name"`
@@ -507,4 +510,125 @@ type HuoguoUserVideoList struct {
 	} `json:"data"`
 	Ret int    `json:"ret"`
 	Msg string `json:"msg"`
+}
+
+// 好看视频作者视频列表API
+type HaokanUserVideoList struct {
+	Errno int    `json:"errno"`
+	Error string `json:"error"`
+	Data  struct {
+		RequestParam []interface{} `json:"requestParam"`
+		Response     struct {
+			ResponseCount int `json:"response_count"`
+			HasMore       int `json:"has_more"`
+			Results       []struct {
+				TplName string `json:"tplName"`
+				Type    string `json:"type"`
+				Content struct {
+					Vid              string        `json:"vid"`
+					SortTime         int           `json:"sort_time"`
+					PublishTime      string        `json:"publish_time"`
+					Title            string        `json:"title"`
+					CoverSrc         string        `json:"cover_src"`
+					CoverSrcPc       string        `json:"cover_src_pc"`
+					VideoSrc         string        `json:"video_src"`
+					Duration         string        `json:"duration"`
+					Authorid         string        `json:"authorid"`
+					Poster           string        `json:"poster"`
+					Thumbnails       string        `json:"thumbnails"`
+					URL              string        `json:"url"`
+					LocURL           string        `json:"loc_url"`
+					FeedID           string        `json:"feed_id"`
+					Author           string        `json:"author"`
+					AuthorIcon       string        `json:"author_icon"`
+					LikeNum          int           `json:"like_num"`
+					RecType          int           `json:"rec_type"`
+					ReadNum          int           `json:"read_num"`
+					Playcnt          int           `json:"playcnt"`
+					PlaycntText      string        `json:"playcntText"`
+					HaokanSourceFrom string        `json:"haokan_source_from"`
+					Ext              []interface{} `json:"ext"`
+					VideoList        struct {
+						Sd string `json:"sd"`
+						Hd string `json:"hd"`
+						Sc string `json:"sc"`
+					} `json:"video_list"`
+					Size struct {
+						Sd int `json:"sd"`
+						Hd int `json:"hd"`
+						Sc int `json:"sc"`
+					} `json:"size"`
+					VideoType         string      `json:"videoType"`
+					Ctk               string      `json:"ctk"`
+					Pvid              string      `json:"pvid"`
+					VideoShortURL     string      `json:"video_short_url"`
+					AuthorPassportID  string      `json:"author_passport_id"`
+					Dtime             int64       `json:"dtime"`
+					VoteDisableCtrl   string      `json:"vote_disable_ctrl"`
+					SensitiveFlags    interface{} `json:"sensitive_flags"`
+					DisplaytypeExinfo struct {
+						GoodsType []interface{} `json:"goods_type"`
+					} `json:"displaytype_exinfo"`
+					IsShowFeature bool   `json:"is_show_feature"`
+					CommentNum    string `json:"commentNum"`
+					PraiseNum     int    `json:"praiseNum"`
+				} `json:"content"`
+			} `json:"results"`
+			Ctime string `json:"ctime"`
+		} `json:"response"`
+	} `json:"data"`
+}
+
+// 哔哩哔哩视频作者视频列表API
+type BliUserVideoList struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+	TTL     int    `json:"ttl"`
+	Data    struct {
+		List struct {
+			Tlist struct {
+				Num3 struct {
+					Tid   int    `json:"tid"`
+					Count int    `json:"count"`
+					Name  string `json:"name"`
+				} `json:"3"`
+				Num4 struct {
+					Tid   int    `json:"tid"`
+					Count int    `json:"count"`
+					Name  string `json:"name"`
+				} `json:"4"`
+				Num160 struct {
+					Tid   int    `json:"tid"`
+					Count int    `json:"count"`
+					Name  string `json:"name"`
+				} `json:"160"`
+			} `json:"tlist"`
+			Vlist []struct {
+				Comment      int    `json:"comment"`
+				Typeid       int    `json:"typeid"`
+				Play         int    `json:"play"`
+				Pic          string `json:"pic"`
+				Subtitle     string `json:"subtitle"`
+				Description  string `json:"description"`
+				Copyright    string `json:"copyright"`
+				Title        string `json:"title"`
+				Review       int    `json:"review"`
+				Author       string `json:"author"`
+				Mid          int    `json:"mid"`
+				Created      int    `json:"created"`
+				Length       string `json:"length"`
+				VideoReview  int    `json:"video_review"`
+				Aid          int    `json:"aid"`
+				Bvid         string `json:"bvid"`
+				HideClick    bool   `json:"hide_click"`
+				IsPay        int    `json:"is_pay"`
+				IsUnionVideo int    `json:"is_union_video"`
+			} `json:"vlist"`
+		} `json:"list"`
+		Page struct {
+			Count int `json:"count"`
+			Pn    int `json:"pn"`
+			Ps    int `json:"ps"`
+		} `json:"page"`
+	} `json:"data"`
 }

@@ -11,9 +11,11 @@ import (
 	"net/http"
 	"regexp"
 	"strconv"
+	"strings"
 	"time"
 )
 
+// 作者视频 https://huoguo.qq.com/m/person.html?userid=18590596
 func RunHgUserList(runType RunType, arg map[string]string) error {
 	userid, err := hgGetUserID(runType.Url)
 	if err != nil {
@@ -65,7 +67,12 @@ func RunHgUserList(runType RunType, arg map[string]string) error {
 		pageContext = resData.Data.PageContext
 		if onPage >= startInt {
 			for _, item := range resData.Data.Collections {
+				isVID := IsVideoID("tengxun", item.TvBoard.VideoData.Vid)
+				if isVID && runType.IsDeWeight {
+					continue
+				}
 				downLoadList = append(downLoadList, map[string]string{
+					"vid":   item.TvBoard.VideoData.Vid,
 					"title": item.TvBoard.VideoData.Title,
 					"url":   fmt.Sprintf("https://v.qq.com/x/page/%s.html", item.TvBoard.VideoData.Vid),
 				})
@@ -74,7 +81,7 @@ func RunHgUserList(runType RunType, arg map[string]string) error {
 		}
 		PrintInfof(fmt.Sprintf(
 			"\rcurrent: %d gather: %d author: %s duration: %ds sleep：%.2fs",
-			startInt, len(downLoadList), screenName, (time.Now().Unix() - startTime), sleepTime,
+			onPage, len(downLoadList), screenName, (time.Now().Unix() - startTime), sleepTime,
 		))
 		if errorMsg != "--" {
 			color.Set(color.FgRed, color.Bold)
@@ -85,9 +92,73 @@ func RunHgUserList(runType RunType, arg map[string]string) error {
 	}
 	fmt.Println("")
 	PrintInfo(fmt.Sprintf("采集到 %d 个视频", len(downLoadList)))
-	AnnieDownloadAll(downLoadList, runType)
+	AnnieDownloadAll(downLoadList, runType, "tengxun")
 
 	PrintInfo("全部下载完成")
+	return nil
+}
+
+// 看作者作品列表 look https://huoguo.qq.com/m/person.html?userid=18590596
+func RunLookHgUserList(runType RunType, arg map[string]string) error {
+	runType.Url = strings.Replace(runType.Url, "look ", "", -1)
+	userid, err := hgGetUserID(runType.Url)
+	if err != nil {
+		return err
+	}
+	resData, err := hgGetUserWorkList(userid, 0, "")
+	if err != nil {
+		return err
+	}
+	count := resData.Data.Count
+	page := int(math.Ceil(float64(count) / 20))
+	PrintInfo(fmt.Sprintf("总页数：%d  每页个数：%d  总个数：%d", page, 20, count))
+	startInt := 1
+	endInt := page
+	var downLoadList []map[string]string
+	screenName := "--"
+	startTime := time.Now().Unix()
+	errorMsg := "--"
+	errorCount := 0
+	sleepTime := .5
+	pageContext := ""
+	onPage := 1
+	for {
+		if onPage > endInt {
+			break
+		}
+		time.Sleep(time.Second * time.Duration(sleepTime))
+		resData, err := hgGetUserWorkList(userid, (onPage-1)*10, pageContext)
+		if err != nil {
+			errorCount++
+			errorMsg = err.Error()
+			continue
+		}
+		pageContext = resData.Data.PageContext
+		if onPage >= startInt {
+			if len(resData.Data.Collections) > 0 {
+				downLoadList = append(downLoadList, map[string]string{
+					"page":  fmt.Sprintf("%d", onPage),
+					"title": resData.Data.Collections[0].TvBoard.VideoData.Title,
+				})
+				screenName = resData.Data.Collections[0].TvBoard.User.UserInfo.UserName
+			}
+		}
+		PrintInfof(fmt.Sprintf(
+			"\rcurrent: %d gather: %d author: %s duration: %ds sleep：%.2fs",
+			onPage, len(downLoadList), screenName, (time.Now().Unix() - startTime), sleepTime,
+		))
+		if errorMsg != "--" {
+			color.Set(color.FgRed, color.Bold)
+			fmt.Printf(" errCout：%d errMsg：%s", errorCount, errorMsg)
+			color.Unset()
+		}
+		onPage++
+	}
+	fmt.Println("")
+	PrintInfo(fmt.Sprintf("采集到 %d 个视频", len(downLoadList)))
+	for _, v := range downLoadList {
+		PrintInfo(fmt.Sprintf("第 %s 页 %s", v["page"], v["title"]))
+	}
 	return nil
 }
 
@@ -106,6 +177,7 @@ func hgGetUserID(url string) (string, error) {
 	return "", errors.New("获取UserID失败")
 }
 
+// 请求作者作品列表
 func hgGetUserWorkList(userid string, offset int, pageContext string) (*HuoguoUserVideoList, error) {
 	var jsonData HuoguoUserVideoList
 	var reqBody *bytes.Reader
