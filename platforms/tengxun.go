@@ -13,6 +13,14 @@ import (
 	"time"
 )
 
+func RunTxOne(runType RunType, arg map[string]string) error {
+	err := AnnieDownload(runType.Url, runType.SavePath, runType.CookieFile, runType.DefaultCookie)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // 腾讯归档页：https://v.qq.com/detail/5/52852.html
 func RunTxDetail(runType RunType, arg map[string]string) error {
 	var (
@@ -215,7 +223,7 @@ func RunLookTxUserList(runType RunType, arg map[string]string) error {
 		if err != nil {
 			errorCount++
 			errorMsg = err.Error()
-			continue
+			break
 		}
 		if len(resData.Body.Modules) > 0 && len(resData.Body.Modules[0].Sections) > 0 {
 			if len(resData.Body.Modules[0].Sections[0].BlockList.Blocks) > 0 {

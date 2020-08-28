@@ -11,8 +11,8 @@ import (
 	"strings"
 )
 
-var goannieVersion = "v0.0.08"
-var goannieUpdateTime = "2020-08-27"
+var goannieVersion = "v0.0.09"
+var goannieUpdateTime = "2020-08-28"
 var goannieTitle = `
                                         __           
    __     ___      __      ___     ___ /\_\     __   
@@ -83,6 +83,17 @@ func init() {
 			"腾讯视频",
 			[]UrlRegexp{
 				{
+					"one",
+					"单视频		https://v.qq.com/x/cover/mzc00200agq0com/r31376lllyf.html",
+					[]*regexp.Regexp{
+						regexp.MustCompile(`^(http|https)://v\.qq\.com/x/cover/.*?/.*?\.html.*?$`),
+						regexp.MustCompile(`^(http|https)://v\.qq\.com/x/cover/.*?\.html.*?$`),
+						regexp.MustCompile(`^(http|https)://v\.qq\.com/x/page/.*?/.*?\.html.*?$`),
+						regexp.MustCompile(`^(http|https)://v\.qq\.com/x/page/.*?\.html.*?$`),
+					},
+					pf.RunTxOne,
+				},
+				{
 					"detail",
 					"腾讯剧集页	https://v.qq.com/detail/5/52852.html",
 					[]*regexp.Regexp{
@@ -137,6 +148,14 @@ func init() {
 			"爱奇艺视频",
 			[]UrlRegexp{
 				{
+					"one",
+					"单视频		https://www.iqiyi.com/v_1fr4mggxzpo.html",
+					[]*regexp.Regexp{
+						regexp.MustCompile(`^(http|https)://www\.iqiyi\.com/v_\w+\.html.*?$`),
+					},
+					pf.RunIqyOne,
+				},
+				{
 					"detail",
 					"爱奇艺剧集页	https://www.iqiyi.com/a_19rrht2ok5.html",
 					[]*regexp.Regexp{
@@ -187,8 +206,15 @@ func init() {
 			"好看视频",
 			[]UrlRegexp{
 				{
+					"one",
+					"单视频		https://haokan.baidu.com/v?vid=3881011031260239591",
+					[]*regexp.Regexp{
+						regexp.MustCompile(`^(http|https)://haokan\.baidu\.com/v\?vid=\d+.*?$`),
+					},
+					pf.RunHkOne,
+				},{
 					"userList",
-					"作者视频	https://haokan.baidu.com/author/1649278643844524",
+					"作者视频		https://haokan.baidu.com/author/1649278643844524",
 					[]*regexp.Regexp{
 						regexp.MustCompile(`^(http|https)://haokan\.baidu\.com/author/\d+.*?$`),
 					},
@@ -202,8 +228,17 @@ func init() {
 			"哔哩哔哩",
 			[]UrlRegexp{
 				{
+					"one",
+					"单视频		https://www.bilibili.com/video/BV1iK4y1e7uL",
+					[]*regexp.Regexp{
+						regexp.MustCompile(`^(http|https)://www\.bilibili\.com/video/\w+.*?$`),
+						regexp.MustCompile(`^(http|https)://www\.bilibili\.com/bangumi/play/\w+.*?$`),
+					},
+					pf.RunBliOne,
+				},
+				{
 					"userList",
-					"TA的视频	https://space.bilibili.com/337312411",
+					"TA的视频		https://space.bilibili.com/337312411",
 					[]*regexp.Regexp{
 						regexp.MustCompile(`^(http|https)://space\.bilibili\.com/\d+.*?$`),
 					},

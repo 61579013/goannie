@@ -13,6 +13,14 @@ import (
 	"time"
 )
 
+func RunBliOne(runType RunType, arg map[string]string) error {
+	err := AnnieDownload(runType.Url, runType.SavePath, runType.CookieFile, runType.DefaultCookie)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func RunBliUserList(runType RunType, arg map[string]string) error {
 	userID, err := bliGetUserID(runType.Url)
 	if err != nil {

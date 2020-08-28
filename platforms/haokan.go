@@ -13,6 +13,14 @@ import (
 	"time"
 )
 
+func RunHkOne(runType RunType, arg map[string]string) error {
+	err := AnnieDownload(runType.Url, runType.SavePath, runType.CookieFile, runType.DefaultCookie)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 func RunHkUserList(runType RunType, arg map[string]string) error {
 	userID, err := hkGetUserID(runType.Url)
 	if err != nil {

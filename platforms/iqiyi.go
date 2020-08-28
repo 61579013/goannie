@@ -10,6 +10,14 @@ import (
 	"strconv"
 )
 
+func RunIqyOne(runType RunType, arg map[string]string) error {
+	err := AnnieDownload(runType.Url, runType.SavePath, runType.CookieFile, runType.DefaultCookie)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
 // 爱奇艺归档页：https://www.iqiyi.com/a_19rrht2ok5.html
 func RunIqyDetail(runType RunType, arg map[string]string) error {
 	var (
