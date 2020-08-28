@@ -2,9 +2,12 @@
 goannie 是一个视频资源采集下载的实用工具。目前它还没有 gui ，通过命令行交互的方式操作。
 
 ## 特点
-* 作者视频批量下载
+* 视频批量采集
 * 下载cookie设置
-* 批量下载视频ID存储，支持重复下载过滤
+* 重复下载过滤
+
+## 应用
+* 自媒体视频制作者
 
 ## 环境
 开发测试：
@@ -65,6 +68,7 @@ cookie 设置：在goannie.exe同级目录中新建 ./bilibili.txt 写入cookie=
 annie.exe  
 aria2c.exe  
 redis-server.exe  
+ffmpeg.exe  
 以上会在启动时请求下载。  
 存储位置：`%APPDATA%/goannie/bin`
 
