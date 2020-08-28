@@ -69,7 +69,7 @@ func RunIqyDetail(runType RunType, arg map[string]string) error {
 			continue
 		}
 		for _, item := range resData.Data[fmt.Sprintf("%d", startYear)] {
-			isVID := IsVideoID("iqiyi", item.Vid)
+			isVID := IsVideoID("iqiyi", item.Vid, runType.RedisConn)
 			if isVID && runType.IsDeWeight {
 				continue
 			}

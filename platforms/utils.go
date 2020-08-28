@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"gitee.com/rock_rabbit/goannie/godler"
 	"github.com/fatih/color"
+	"github.com/garyburd/redigo/redis"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -32,7 +33,7 @@ func AnnieDownloadAll(urlList []map[string]string, runType RunType, pt string) {
 		if err != nil {
 			PrintErrInfo(err.Error())
 		} else {
-			AddVideoID(pt, item["vid"])
+			AddVideoID(pt, item["vid"], runType.RedisConn)
 		}
 	}
 }
@@ -205,6 +206,51 @@ func GetAria2() error {
 	return nil
 }
 
+// 请求 redis
+func GetRedis() error {
+	IsAnniePath, err := IsExist(AppBinPath)
+	if err != nil {
+		return err
+	}
+	if !IsAnniePath {
+		if err = os.MkdirAll(AppBinPath, os.ModePerm); err != nil {
+			return nil
+		}
+	}
+	IsRedisFile, err := IsExist(RedisFile)
+	if err != nil {
+		return err
+	}
+	if !IsRedisFile {
+		PrintInfo("检查到该机器没有下载 redis 启动下载")
+		dlerurl := godler.DlerUrl{
+			Url:      "http://image.68wu.cn/redis/redis-server.exe",
+			SavePath: RedisFile,
+			IsBar:    true,
+		}
+		err := dlerurl.Download()
+		if err != nil {
+			return err
+		}
+	}
+	IsRedisConfFile, err := IsExist(RedisConfFile)
+	if err != nil {
+		return err
+	}
+	if !IsRedisConfFile {
+		dlerurl := godler.DlerUrl{
+			Url:      "http://image.68wu.cn/redis/redis.windows-service.conf",
+			SavePath: RedisConfFile,
+			IsBar:    true,
+		}
+		err := dlerurl.Download()
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
 // 文件夹或文件是否存在
 func IsExist(path string) (bool, error) {
 	_, err := os.Stat(path)
@@ -270,46 +316,21 @@ func GetRealUrl(url string) (string, error) {
 }
 
 //对比库是否存在视频ID
-func IsVideoID(pt, vid string) bool {
-	resData, err := GetVideoID(pt)
-	if err != nil {
+func IsVideoID(pt, vid string, conn redis.Conn) bool {
+	isVid, _ := redis.Int(conn.Do("SISMEMBER", pt, vid))
+	if isVid == 0 {
 		return false
 	}
-	for _, i := range *resData {
-		if i == vid {
-			return true
-		}
-	}
-	return false
+	return true
 }
 
 // 存储已下载的视频ID
-func AddVideoID(pt, vid string) (bool, error) {
-	resData, err := GetVideoID(pt)
+func AddVideoID(pt, vid string, conn redis.Conn) error {
+	_, err := conn.Do("SADD", pt, vid)
 	if err != nil {
-		return false, err
+		return err
 	}
-	for _, i := range *resData {
-		if i == vid {
-			return true, nil
-		}
-	}
-	*resData = append(*resData, vid)
-	AppDataFile := fmt.Sprintf("%s\\%s.json", AppDataPath, pt)
-	f, err := os.OpenFile(AppDataFile, os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0666)
-	if err != nil {
-		return false, err
-	}
-	defer f.Close()
-	content, err := json.Marshal(*resData)
-	if err != nil {
-		return false, err
-	}
-	_, err = f.Write(content)
-	if err != nil {
-		return false, err
-	}
-	return false, nil
+	return nil
 }
 
 // 获取已下载的视频ID
@@ -355,6 +376,46 @@ func GetVideoID(pt string) (*[]string, error) {
 	return &data, nil
 }
 
+// 兼容之前的文件存储方式，直接导入到 redis 库
+func TOLeadRedis(conn redis.Conn) {
+	ptList := []map[string]string{
+		{
+			"name": "腾讯视频",
+			"pt":   "tengxun",
+		}, {
+			"name": "爱奇艺视频",
+			"pt":   "iqiyi",
+		}, {
+			"name": "好看视频",
+			"pt":   "haokan",
+		}, {
+			"name": "哔哩哔哩",
+			"pt":   "bilibili",
+		}, {
+			"name": "西瓜视频",
+			"pt":   "xigua",
+		},
+	}
+	count := 0
+	for _, item := range ptList {
+		resData, err := GetVideoID(item["pt"])
+		if err != nil {
+			continue
+		}
+		for _, i := range *resData {
+			count++
+			AddVideoID(item["pt"], i, conn)
+		}
+		// 删除
+		AppDataFile := fmt.Sprintf("%s\\%s.json", AppDataPath, item["pt"])
+		os.Remove(AppDataFile)
+	}
+	if count > 0 {
+		PrintInfo(fmt.Sprintf("v0.0.09 版本兼容：将 %d 条数据移动到 redis 库", count))
+		fmt.Println("")
+	}
+}
+
 func CreactVideoID(pt string) error {
 	// 创建
 	AppDataFile := fmt.Sprintf("%s\\%s.json", AppDataPath, pt)
@@ -370,7 +431,7 @@ func CreactVideoID(pt string) error {
 	return nil
 }
 
-func PrintVideoIDCount() {
+func PrintVideoIDCount(conn redis.Conn) {
 	ptList := []map[string]string{
 		{
 			"name":  "腾讯视频",
@@ -394,14 +455,10 @@ func PrintVideoIDCount() {
 			"count": "",
 		},
 	}
-	for idx,item := range ptList{
-		data,err := GetVideoID(item["pt"])
-		if err != nil{
-			ptList[idx]["count"] = "--"
-		}else{
-			ptList[idx]["count"] = fmt.Sprintf("%d",len(*data))
-		}
-		fmt.Printf("%s：%s  ",item["name"],ptList[idx]["count"])
+	for idx, item := range ptList {
+		resInt, _ := redis.Int(conn.Do("SCARD", item["pt"]))
+		ptList[idx]["count"] = fmt.Sprintf("%d", resInt)
+		fmt.Printf("%s：%s  ", item["name"], ptList[idx]["count"])
 	}
 	fmt.Println("")
 }

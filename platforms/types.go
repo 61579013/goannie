@@ -3,6 +3,7 @@ package platforms
 import (
 	"fmt"
 	"github.com/fatih/color"
+	"github.com/garyburd/redigo/redis"
 	"net/http"
 	"os"
 	"time"
@@ -18,6 +19,8 @@ var AppDataPath = fmt.Sprintf("%s\\data", AppPath)
 var AnnieFile = fmt.Sprintf("%s\\annie.exe", AppBinPath)
 var FfmpegFile = fmt.Sprintf("%s\\ffmpeg.exe", AppBinPath)
 var Aria2File = fmt.Sprintf("%s\\aria2c.exe", AppBinPath)
+var RedisFile = fmt.Sprintf("%s\\redis-server.exe", AppBinPath)
+var RedisConfFile = fmt.Sprintf("%s\\redis.windows-service.conf", AppBinPath)
 
 type DownloadPrint struct {
 	Site      string
@@ -108,6 +111,7 @@ type RunType struct {
 	CookieFile    string
 	DefaultCookie string
 	IsDeWeight    bool
+	RedisConn redis.Conn
 }
 
 // 腾讯归档API

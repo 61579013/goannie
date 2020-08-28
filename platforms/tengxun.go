@@ -97,12 +97,12 @@ func RunTxDetail(runType RunType, arg map[string]string) error {
 			continue
 		}
 		for _, item := range resData.PlaylistItem.VideoPlayList {
-			isVID := IsVideoID("tengxun", item.ID)
+			isVID := IsVideoID("tengxun", item.ID, runType.RedisConn)
 			if isVID && runType.IsDeWeight {
 				continue
 			}
 			downLoadList = append(downLoadList, map[string]string{
-				"vid":item.ID,
+				"vid":   item.ID,
 				"title": item.Title,
 				"url":   item.PlayURL,
 			})
@@ -163,7 +163,7 @@ func RunTxUserList(runType RunType, arg map[string]string) error {
 		}
 		if len(resData.Body.Modules) > 0 && len(resData.Body.Modules[0].Sections) > 0 {
 			for _, item := range resData.Body.Modules[0].Sections[0].BlockList.Blocks {
-				isVID := IsVideoID("tengxun", item.Data.Vid)
+				isVID := IsVideoID("tengxun", item.Data.Vid, runType.RedisConn)
 				if isVID && runType.IsDeWeight {
 					continue
 				}

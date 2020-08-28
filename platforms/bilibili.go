@@ -70,7 +70,7 @@ func RunBliUserList(runType RunType, arg map[string]string) error {
 			continue
 		}
 		for _, item := range resData.Data.List.Vlist {
-			isVID := IsVideoID("bilibili", item.Bvid)
+			isVID := IsVideoID("bilibili", item.Bvid, runType.RedisConn)
 			if isVID && runType.IsDeWeight {
 				continue
 			}

@@ -71,7 +71,7 @@ func RunHkUserList(runType RunType, arg map[string]string) error {
 		cTime = resData.Data.Response.Ctime
 		if onPage >= startInt {
 			for _, item := range resData.Data.Response.Results {
-				isVID := IsVideoID("haokan", item.Content.Vid)
+				isVID := IsVideoID("haokan", item.Content.Vid, runType.RedisConn)
 				if isVID && runType.IsDeWeight {
 					continue
 				}

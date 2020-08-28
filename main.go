@@ -6,12 +6,14 @@ import (
 	"fmt"
 	pf "gitee.com/rock_rabbit/goannie/platforms"
 	"github.com/fatih/color"
+	"github.com/garyburd/redigo/redis"
 	"os"
+	"os/exec"
 	"regexp"
 	"strings"
 )
 
-var goannieVersion = "v0.0.09"
+var goannieVersion = "v0.0.10"
 var goannieUpdateTime = "2020-08-28"
 var goannieTitle = `
                                         __           
@@ -212,7 +214,7 @@ func init() {
 						regexp.MustCompile(`^(http|https)://haokan\.baidu\.com/v\?vid=\d+.*?$`),
 					},
 					pf.RunHkOne,
-				},{
+				}, {
 					"userList",
 					"作者视频		https://haokan.baidu.com/author/1649278643844524",
 					[]*regexp.Regexp{
@@ -257,7 +259,6 @@ func main() {
 		printErrInfo(err.Error())
 		exitInfo()
 	}
-	printHello()
 	// 检查 annie
 	err := pf.GetAnnie()
 	if err != nil {
@@ -274,6 +275,24 @@ func main() {
 		printErrInfo(err.Error())
 		exitInfo()
 	}
+	// 检查 redis
+	if err = pf.GetRedis(); err != nil {
+		printErrInfo(err.Error())
+		exitInfo()
+	}
+	// 启动 redis
+	cmd := exec.Command("redis-server",pf.RedisConfFile)
+	_ = cmd.Start()
+	// 连接 redis
+	conn, err := redis.Dial("tcp", "127.0.0.1:6379")
+	if err != nil {
+		printErrInfo(err.Error())
+		exitInfo()
+	}
+	defer conn.Close()
+	printHello(conn)
+	// v0.0.09 版本兼容
+	pf.TOLeadRedis(conn)
 GETSAVEPATH:
 	var savePath string
 	err = getSavePath(&savePath)
@@ -323,6 +342,7 @@ GETURL:
 		CookieFile:    platform.CookieFile,
 		DefaultCookie: platform.DefaultCookie,
 		IsDeWeight:    isDeWeightBool,
+		RedisConn:     conn,
 	}
 	err = subtask.Run(runType, map[string]string{})
 	if err != nil {
@@ -399,7 +419,7 @@ func getIsDeWeight(isDeWeight *string) error {
 }
 
 // 打印欢迎语
-func printHello() {
+func printHello(conn redis.Conn) {
 	color.Set(color.FgGreen, color.Bold)
 	defer color.Unset()
 	fmt.Println(goannieTitle)
@@ -420,7 +440,7 @@ func printHello() {
 	color.Set(color.FgHiBlue, color.Bold)
 	fmt.Println("下载统计")
 	color.Unset()
-	pf.PrintVideoIDCount()
+	pf.PrintVideoIDCount(conn)
 	fmt.Println("")
 }
 

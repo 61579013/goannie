@@ -82,7 +82,7 @@ func RunXgUserList(runType RunType, arg map[string]string) error {
 		screenName = jsonData.UserInfo.Name
 		if onPage >= startInt {
 			for _, item := range jsonData.Data {
-				isVID := IsVideoID("xigua", item.GroupIdStr)
+				isVID := IsVideoID("xigua", item.GroupIdStr, runType.RedisConn)
 				if isVID && runType.IsDeWeight {
 					continue
 				}
@@ -114,7 +114,7 @@ func RunXgUserList(runType RunType, arg map[string]string) error {
 		if err != nil {
 			PrintErrInfo(err.Error())
 		}else{
-			AddVideoID("xigua", video["vid"])
+			AddVideoID("xigua", video["vid"], runType.RedisConn)
 		}
 	}
 

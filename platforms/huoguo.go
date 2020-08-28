@@ -67,7 +67,7 @@ func RunHgUserList(runType RunType, arg map[string]string) error {
 		pageContext = resData.Data.PageContext
 		if onPage >= startInt {
 			for _, item := range resData.Data.Collections {
-				isVID := IsVideoID("tengxun", item.TvBoard.VideoData.Vid)
+				isVID := IsVideoID("tengxun", item.TvBoard.VideoData.Vid, runType.RedisConn)
 				if isVID && runType.IsDeWeight {
 					continue
 				}
