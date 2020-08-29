@@ -13,8 +13,8 @@ import (
 	"strings"
 )
 
-var goannieVersion = "v0.0.10"
-var goannieUpdateTime = "2020-08-28"
+var goannieVersion = "v0.0.11"
+var goannieUpdateTime = "2020-08-29"
 var goannieTitle = `
                                         __           
    __     ___      __      ___     ___ /\_\     __   
@@ -248,7 +248,7 @@ func init() {
 				},
 			},
 			"./bilibili.txt",
-			"Hm_lvt_8a6e55dbd2870f0f5bc9194cddf32a02=1585388744; _uuid=FEA617EA-B2C3-B04F-885E-46ABFAE4F7D805867infoc; buvid3=2811A771-C069-4E94-B8FA-F782D325D66D53928infoc; sid=k0i58z3h; CURRENT_FNVAL=16; LIVE_BUVID=AUTO4815859721196971; rpdid=|(J~|~mR~u~R0J'ul)lm~kuJl; DedeUserID=73471687; DedeUserID__ckMd5=0faa2eb95831029d; SESSDATA=56f9a3c2%2C1601524186%2C0ae0b*41; bili_jct=5f7ce56db63cc720b6ceffebd133e796; CURRENT_QUALITY=120; bp_video_offset_73471687=419852075596227754; PVID=2",
+			"",
 		},
 	}
 }
@@ -280,8 +280,14 @@ func main() {
 		printErrInfo(err.Error())
 		exitInfo()
 	}
+	if isDataPath,_:= isDir(pf.AppDataPath);!isDataPath{
+		if err = os.MkdirAll(pf.AppDataPath, os.ModePerm); err != nil {
+			printErrInfo(err.Error())
+			exitInfo()
+		}
+	}
 	// 启动 redis
-	cmd := exec.Command("redis-server",pf.RedisConfFile)
+	cmd := exec.Command("redis-server",pf.RedisConfFile,"--dir",pf.AppDataPath)
 	_ = cmd.Start()
 	// 连接 redis
 	conn, err := redis.Dial("tcp", "127.0.0.1:6379")
@@ -454,7 +460,7 @@ func printErrInfo(errInfo string) {
 func exitInfo() {
 	color.Set(color.FgGreen, color.Bold)
 	defer color.Unset()
-	fmt.Printf("$ 回车退出：\n")
+	fmt.Printf("$ 回车退出：")
 	var s string
 	_, _ = fmt.Scanln(&s)
 	os.Exit(1)
