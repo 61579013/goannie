@@ -57,6 +57,7 @@ func RunXgUserList(runType RunType, arg map[string]string) error {
 	startTime := time.Now().Unix()
 	errorMsg := "--"
 	errorCount := 0
+	breakCount := 0
 	for {
 		if onPage > endInt {
 			break
@@ -94,6 +95,11 @@ func RunXgUserList(runType RunType, arg map[string]string) error {
 			}
 		}
 		if !jsonData.HasMore && len(jsonData.Data) == 0 {
+			// break 机会
+			if breakCount < 10{
+				breakCount++
+				continue
+			}
 			break
 		}
 		if len(jsonData.Data) == 0 {
@@ -146,6 +152,7 @@ func RunLookXgUserList(runType RunType, arg map[string]string) error {
 	startTime := time.Now().Unix()
 	errorMsg := "--"
 	errorCount := 0
+	breakCount := 0
 	for {
 		if onPage > endInt {
 			break
@@ -177,7 +184,13 @@ func RunLookXgUserList(runType RunType, arg map[string]string) error {
 				})
 			}
 		}
+		// 判断连续致命错误
 		if !jsonData.HasMore && len(jsonData.Data) == 0 {
+			// break 机会
+			if breakCount < 10{
+				breakCount++
+				continue
+			}
 			break
 		}
 		if len(jsonData.Data) == 0 {

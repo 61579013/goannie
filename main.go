@@ -13,7 +13,7 @@ import (
 	"strings"
 )
 
-var goannieVersion = "v0.0.11"
+var goannieVersion = "v0.0.12"
 var goannieUpdateTime = "2020-08-29"
 var goannieTitle = `
                                         __           
