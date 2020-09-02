@@ -9,12 +9,13 @@ import (
 	"github.com/garyburd/redigo/redis"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 )
 
-var goannieVersion = "v0.0.12"
-var goannieUpdateTime = "2020-08-29"
+var goannieVersion = "v0.0.13"
+var goannieUpdateTime = "2020-09-02"
 var goannieTitle = `
                                         __           
    __     ___      __      ___     ___ /\_\     __   
@@ -122,7 +123,7 @@ func init() {
 					pf.RunLookTxUserList,
 				},
 			},
-			"./tengxun.txt",
+			"tengxun.txt",
 			"",
 		}, {
 			"火锅视频",
@@ -143,7 +144,7 @@ func init() {
 					pf.RunLookHgUserList,
 				},
 			},
-			"./tengxun.txt",
+			"tengxun.txt",
 			"",
 		},
 		{
@@ -166,7 +167,7 @@ func init() {
 					pf.RunIqyDetail,
 				},
 			},
-			"./iqiyi.txt",
+			"iqiyi.txt",
 			"",
 		},
 		{
@@ -201,7 +202,7 @@ func init() {
 					pf.RunLookXgUserList,
 				},
 			},
-			"./xigua.txt",
+			"xigua.txt",
 			"",
 		},
 		{
@@ -223,7 +224,7 @@ func init() {
 					pf.RunHkUserList,
 				},
 			},
-			"./haokan.txt",
+			"haokan.txt",
 			"",
 		},
 		{
@@ -247,7 +248,7 @@ func init() {
 					pf.RunBliUserList,
 				},
 			},
-			"./bilibili.txt",
+			"bilibili.txt",
 			"",
 		},
 	}
@@ -342,10 +343,11 @@ GETURL:
 	color.Set(color.FgBlue, color.Bold)
 	fmt.Printf("平台：%s  子任务：%s\n", platform.Name, subtask.Name)
 	color.Unset()
+	currenpath,_ := getCurrentPath()
 	runType := pf.RunType{
 		Url:           url,
 		SavePath:      savePath,
-		CookieFile:    platform.CookieFile,
+		CookieFile:    fmt.Sprintf("%s%s",currenpath,platform.CookieFile),
 		DefaultCookie: platform.DefaultCookie,
 		IsDeWeight:    isDeWeightBool,
 		RedisConn:     conn,
@@ -464,4 +466,23 @@ func exitInfo() {
 	var s string
 	_, _ = fmt.Scanln(&s)
 	os.Exit(1)
+}
+
+func getCurrentPath() (string, error) {
+	file, err := exec.LookPath(os.Args[0])
+	if err != nil {
+		return "", err
+	}
+	path, err := filepath.Abs(file)
+	if err != nil {
+		return "", err
+	}
+	i := strings.LastIndex(path, "/")
+	if i < 0 {
+		i = strings.LastIndex(path, "\\")
+	}
+	if i < 0 {
+		return "", errors.New(`error: Can't find "/" or "\".`)
+	}
+	return string(path[0 : i+1]), nil
 }

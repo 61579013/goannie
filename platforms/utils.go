@@ -54,7 +54,7 @@ func AnnieDownload(url, savePath, cookiePath, DefaultCookie string) error {
 	if GetTxtContent(cookiePath) == "" {
 		onCookie = DefaultCookie
 	}
-	arg = append(arg, []string{"-retry", "3", "-c", onCookie, "-o", savePath, url}...)
+	arg = append(arg, []string{"-retry", "100", "-c", onCookie, "-o", savePath, url}...)
 	cmd := exec.Command("annie", arg...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
