@@ -4,25 +4,28 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/fatih/color"
 	"io/ioutil"
 	"math"
 	"net/http"
 	"regexp"
 	"strconv"
 	"time"
+
+	"github.com/fatih/color"
 )
 
+// RunHkOne 单视频
 func RunHkOne(runType RunType, arg map[string]string) error {
-	err := AnnieDownload(runType.Url, runType.SavePath, runType.CookieFile, runType.DefaultCookie)
+	err := AnnieDownload(runType.URL, runType.SavePath, runType.CookieFile, runType.DefaultCookie)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
+// RunHkUserList 作者列表
 func RunHkUserList(runType RunType, arg map[string]string) error {
-	userID, err := hkGetUserID(runType.Url)
+	userID, err := hkGetUserID(runType.URL)
 	if err != nil {
 		return err
 	}

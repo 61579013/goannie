@@ -4,18 +4,20 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
-	pf "gitee.com/rock_rabbit/goannie/platforms"
-	"github.com/fatih/color"
-	"github.com/garyburd/redigo/redis"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"gitee.com/rock_rabbit/goannie/binary"
+	pf "gitee.com/rock_rabbit/goannie/platforms"
+	"github.com/fatih/color"
+	"github.com/garyburd/redigo/redis"
 )
 
-var goannieVersion = "v0.0.13"
-var goannieUpdateTime = "2020-09-02"
+var goannieVersion = "v0.0.14"
+var goannieUpdateTime = "2020-09-15"
 var goannieTitle = `
                                         __           
    __     ___      __      ___     ___ /\_\     __   
@@ -26,35 +28,35 @@ var goannieTitle = `
    /\____/
    \_/__/`
 
-// 平台子任务结构体
-type UrlRegexp struct {
+// URLRegexp 平台子任务结构体
+type URLRegexp struct {
 	Name       string                                    // 匹配名称
 	Info       string                                    // 简介
-	UrlRegexps []*regexp.Regexp                          // URL匹配表
+	URLRegexps []*regexp.Regexp                          // URL匹配表
 	Run        func(pf.RunType, map[string]string) error // 执行任务
 }
 
-// 平台结构体
+// Platform 平台结构体
 type Platform struct {
 	Name          string      // 平台名称
-	UrlRegexps    []UrlRegexp // URL匹配表
-	CookieFile    string
-	DefaultCookie string
+	URLRegexps    []URLRegexp // URL匹配表
+	CookieFile    string      // Cookie文件路径
+	DefaultCookie string      // 默认Cookie
 }
 
-// 匹配url
-func (pf Platform) isUrl(url string) (bool, UrlRegexp) {
-	for _, item := range pf.UrlRegexps {
-		for _, must := range item.UrlRegexps {
+// isURL 匹配url
+func (pf Platform) isURL(url string) (bool, URLRegexp) {
+	for _, item := range pf.URLRegexps {
+		for _, must := range item.URLRegexps {
 			if must.MatchString(url) {
 				return true, item
 			}
 		}
 	}
-	return false, UrlRegexp{}
+	return false, URLRegexp{}
 }
 
-// 打印信息
+// printInfo 打印信息
 func (pf Platform) printInfo() {
 	color.Set(color.FgBlue, color.Bold)
 	fmt.Printf("|-----------------\t ")
@@ -65,7 +67,7 @@ func (pf Platform) printInfo() {
 	color.Set(color.FgBlue, color.Bold)
 	fmt.Printf(" \t-----------------|\n")
 	color.Unset()
-	for _, item := range pf.UrlRegexps {
+	for _, item := range pf.URLRegexps {
 		color.Set(color.FgBlue, color.Bold)
 		fmt.Printf("task: ")
 		color.Unset()
@@ -80,11 +82,11 @@ func (pf Platform) printInfo() {
 var platformList []Platform
 
 func init() {
-	// 初始化支持平台https://v.qq.com/vplus/8e7410558116f585a0b6c87bb849e22c#uin=8e7410558116f585a0b6c87bb849e22c
+	// 初始化支持平台
 	platformList = []Platform{
 		{
 			"腾讯视频",
-			[]UrlRegexp{
+			[]URLRegexp{
 				{
 					"one",
 					"单视频		https://v.qq.com/x/cover/mzc00200agq0com/r31376lllyf.html",
@@ -127,7 +129,7 @@ func init() {
 			"",
 		}, {
 			"火锅视频",
-			[]UrlRegexp{
+			[]URLRegexp{
 				{
 					"userList",
 					"作者视频		https://huoguo.qq.com/m/person.html?userid=18590596",
@@ -149,7 +151,7 @@ func init() {
 		},
 		{
 			"爱奇艺视频",
-			[]UrlRegexp{
+			[]URLRegexp{
 				{
 					"one",
 					"单视频		https://www.iqiyi.com/v_1fr4mggxzpo.html",
@@ -172,7 +174,7 @@ func init() {
 		},
 		{
 			"西瓜视频",
-			[]UrlRegexp{
+			[]URLRegexp{
 				{
 					"one",
 					"单视频		https://www.ixigua.com/6832194590221533707",
@@ -207,7 +209,7 @@ func init() {
 		},
 		{
 			"好看视频",
-			[]UrlRegexp{
+			[]URLRegexp{
 				{
 					"one",
 					"单视频		https://haokan.baidu.com/v?vid=3881011031260239591",
@@ -229,7 +231,7 @@ func init() {
 		},
 		{
 			"哔哩哔哩",
-			[]UrlRegexp{
+			[]URLRegexp{
 				{
 					"one",
 					"单视频		https://www.bilibili.com/video/BV1iK4y1e7uL",
@@ -260,35 +262,19 @@ func main() {
 		printErrInfo(err.Error())
 		exitInfo()
 	}
-	// 检查 annie
-	err := pf.GetAnnie()
-	if err != nil {
+	// 检查二进制文件更新
+	if err := binary.Update(); err != nil {
 		printErrInfo(err.Error())
-		exitInfo()
 	}
-	// 检查ffmpeg
-	if err = pf.GetFfmpeg(); err != nil {
-		printErrInfo(err.Error())
-		exitInfo()
-	}
-	// 检查Aria2
-	if err = pf.GetAria2(); err != nil {
-		printErrInfo(err.Error())
-		exitInfo()
-	}
-	// 检查 redis
-	if err = pf.GetRedis(); err != nil {
-		printErrInfo(err.Error())
-		exitInfo()
-	}
-	if isDataPath,_:= isDir(pf.AppDataPath);!isDataPath{
-		if err = os.MkdirAll(pf.AppDataPath, os.ModePerm); err != nil {
+	// 检查Data目录
+	if isDataPath, _ := isDir(pf.AppDataPath); !isDataPath {
+		if err := os.MkdirAll(pf.AppDataPath, os.ModePerm); err != nil {
 			printErrInfo(err.Error())
 			exitInfo()
 		}
 	}
 	// 启动 redis
-	cmd := exec.Command("redis-server",pf.RedisConfFile,"--dir",pf.AppDataPath)
+	cmd := exec.Command("redis-server", pf.RedisConfFile, "--dir", pf.AppDataPath)
 	_ = cmd.Start()
 	// 连接 redis
 	conn, err := redis.Dial("tcp", "127.0.0.1:6379")
@@ -302,7 +288,7 @@ func main() {
 	pf.TOLeadRedis(conn)
 GETSAVEPATH:
 	var savePath string
-	err = getSavePath(&savePath)
+	err = getInput("请输入保存路径", &savePath)
 	if err != nil {
 		printErrInfo(err.Error())
 		goto GETSAVEPATH
@@ -320,18 +306,18 @@ GETSAVEPATH:
 	// 是否去重
 	var isDeWeight string
 	isDeWeightBool := true
-	err = getIsDeWeight(&isDeWeight)
+	err = getInput("是否去重？ yes or no (yse)", &isDeWeight)
 	if isDeWeight == "no" {
 		isDeWeightBool = false
 	}
 GETURL:
 	var url string
-	err = getUrl(&url)
+	err = getInput("请输入URL", &url)
 	if err != nil {
 		printErrInfo(err.Error())
 		goto GETURL
 	}
-	platform, subtask, err := getUrlPlatform(url)
+	platform, subtask, err := getURLPlatform(url)
 	if err != nil {
 		// 尝试直接使用 annie
 		err = pf.AnnieDownload(url, savePath, "", "")
@@ -343,11 +329,11 @@ GETURL:
 	color.Set(color.FgBlue, color.Bold)
 	fmt.Printf("平台：%s  子任务：%s\n", platform.Name, subtask.Name)
 	color.Unset()
-	currenpath,_ := getCurrentPath()
+	currenpath, _ := getCurrentPath()
 	runType := pf.RunType{
-		Url:           url,
+		URL:           url,
 		SavePath:      savePath,
-		CookieFile:    fmt.Sprintf("%s%s",currenpath,platform.CookieFile),
+		CookieFile:    fmt.Sprintf("%s%s", currenpath, platform.CookieFile),
 		DefaultCookie: platform.DefaultCookie,
 		IsDeWeight:    isDeWeightBool,
 		RedisConn:     conn,
@@ -360,73 +346,44 @@ GETURL:
 	goto GETURL
 }
 
-// 获取url平台
-func getUrlPlatform(url string) (Platform, UrlRegexp, error) {
+// getURLPlatform 获取url平台
+func getURLPlatform(url string) (Platform, URLRegexp, error) {
 	for _, item := range platformList {
-		isUrl, subtask := item.isUrl(url)
-		if isUrl {
+		isURL, subtask := item.isURL(url)
+		if isURL {
 			return item, subtask, nil
 		}
 	}
-	return Platform{}, UrlRegexp{}, errors.New("不支持这个链接")
+	return Platform{}, URLRegexp{}, errors.New("不支持这个链接")
 }
 
-// 获取URL
-func getUrl(url *string) error {
-	color.Set(color.FgGreen, color.Bold)
-	fmt.Printf("$ 请输入URL：")
-	color.Unset()
-	reader := bufio.NewReader(os.Stdin)
-	data, _, err := reader.ReadLine()
-	if err != nil {
-		return err
-	}
-	*url = strings.Replace(string(data), "\n", "", -1)
-	return nil
-}
-
-// 文件夹是否存在
+// isDir 文件夹是否存在
 func isDir(path string) (bool, error) {
 	_, err := os.Stat(path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return false, nil
-		} else {
-			return false, err
 		}
+		return false, err
 	}
 	return true, nil
 }
 
-// 获取保存路径
-func getSavePath(savePath *string) error {
+// getInput 获取控制台输入
+func getInput(info string, outStr *string) error {
 	color.Set(color.FgGreen, color.Bold)
-	fmt.Printf("$ 请输入保存路径：")
+	fmt.Printf("$ %s：", info)
 	color.Unset()
 	reader := bufio.NewReader(os.Stdin)
 	data, _, err := reader.ReadLine()
 	if err != nil {
 		return err
 	}
-	*savePath = strings.Replace(string(data), "\n", "", -1)
+	*outStr = strings.Replace(string(data), "\n", "", -1)
 	return nil
 }
 
-// 是否去重
-func getIsDeWeight(isDeWeight *string) error {
-	color.Set(color.FgGreen, color.Bold)
-	fmt.Printf("$ 是否去重？ yes or no (yse)：")
-	color.Unset()
-	reader := bufio.NewReader(os.Stdin)
-	data, _, err := reader.ReadLine()
-	if err != nil {
-		return err
-	}
-	*isDeWeight = strings.Replace(string(data), "\n", "", -1)
-	return nil
-}
-
-// 打印欢迎语
+// printHello 打印欢迎语
 func printHello(conn redis.Conn) {
 	color.Set(color.FgGreen, color.Bold)
 	defer color.Unset()
@@ -452,13 +409,14 @@ func printHello(conn redis.Conn) {
 	fmt.Println("")
 }
 
-// 打印错误信息
+// printErrInfo 打印错误信息
 func printErrInfo(errInfo string) {
 	color.Set(color.FgRed, color.Bold)
 	defer color.Unset()
 	fmt.Println("错误信息：" + errInfo)
 }
 
+// exitInfo 结束程序
 func exitInfo() {
 	color.Set(color.FgGreen, color.Bold)
 	defer color.Unset()
@@ -468,6 +426,7 @@ func exitInfo() {
 	os.Exit(1)
 }
 
+// getCurrentPath 获取程序所在目录
 func getCurrentPath() (string, error) {
 	file, err := exec.LookPath(os.Args[0])
 	if err != nil {
@@ -482,7 +441,7 @@ func getCurrentPath() (string, error) {
 		i = strings.LastIndex(path, "\\")
 	}
 	if i < 0 {
-		return "", errors.New(`error: Can't find "/" or "\".`)
+		return "", errors.New(`error: Can't find "/" or "\". `)
 	}
 	return string(path[0 : i+1]), nil
 }

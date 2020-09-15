@@ -10,15 +10,16 @@ import (
 	"strconv"
 )
 
+// RunIqyOne 单视频
 func RunIqyOne(runType RunType, arg map[string]string) error {
-	err := AnnieDownload(runType.Url, runType.SavePath, runType.CookieFile, runType.DefaultCookie)
+	err := AnnieDownload(runType.URL, runType.SavePath, runType.CookieFile, runType.DefaultCookie)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-// 爱奇艺归档页：https://www.iqiyi.com/a_19rrht2ok5.html
+// RunIqyDetail 爱奇艺归档页：https://www.iqiyi.com/a_19rrht2ok5.html
 func RunIqyDetail(runType RunType, arg map[string]string) error {
 	var (
 		start, end string
@@ -45,7 +46,7 @@ func RunIqyDetail(runType RunType, arg map[string]string) error {
 	}
 	//var playPageInfo map[string]string
 
-	playPageInfo, err := DetailGetPlayPageInfo(runType.Url, runType.CookieFile)
+	playPageInfo, err := DetailGetPlayPageInfo(runType.URL, runType.CookieFile)
 	if err != nil {
 		return err
 	}
@@ -90,7 +91,7 @@ func RunIqyDetail(runType RunType, arg map[string]string) error {
 	return nil
 }
 
-// 爱奇艺归档请求API
+// DetailGetSvlistinfo 爱奇艺归档请求API
 func DetailGetSvlistinfo(url, cookiePath string) (*IqiyiSvlistinfo, error) {
 	var jsonData IqiyiSvlistinfo
 	req, err := http.NewRequest("GET", url, nil)
@@ -124,7 +125,7 @@ func DetailGetSvlistinfo(url, cookiePath string) (*IqiyiSvlistinfo, error) {
 	return &jsonData, nil
 }
 
-// 爱奇艺归档请求HTML
+// DetailGetPlayPageInfo 爱奇艺归档请求HTML
 func DetailGetPlayPageInfo(url, cookiePath string) (*IqiyiPlayPageInfo, error) {
 	var jsonData IqiyiPlayPageInfo
 	req, err := http.NewRequest("GET", url, nil)

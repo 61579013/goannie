@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/fatih/color"
 	"io/ioutil"
 	"math"
 	"net/http"
@@ -13,11 +12,13 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/fatih/color"
 )
 
-// 作者视频 https://huoguo.qq.com/m/person.html?userid=18590596
+// RunHgUserList 作者视频 https://huoguo.qq.com/m/person.html?userid=18590596
 func RunHgUserList(runType RunType, arg map[string]string) error {
-	userid, err := hgGetUserID(runType.Url)
+	userid, err := hgGetUserID(runType.URL)
 	if err != nil {
 		return err
 	}
@@ -98,10 +99,10 @@ func RunHgUserList(runType RunType, arg map[string]string) error {
 	return nil
 }
 
-// 看作者作品列表 look https://huoguo.qq.com/m/person.html?userid=18590596
+// RunLookHgUserList 看作者作品列表 look https://huoguo.qq.com/m/person.html?userid=18590596
 func RunLookHgUserList(runType RunType, arg map[string]string) error {
-	runType.Url = strings.Replace(runType.Url, "look ", "", -1)
-	userid, err := hgGetUserID(runType.Url)
+	runType.URL = strings.Replace(runType.URL, "look ", "", -1)
+	userid, err := hgGetUserID(runType.URL)
 	if err != nil {
 		return err
 	}

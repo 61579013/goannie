@@ -16,8 +16,9 @@ import (
 	"github.com/cheggaaa/pb/v3"
 )
 
-type DlerUrl struct {
-	Url                   string        // 下载的url
+// DlerURL 基础结构体
+type DlerURL struct {
+	URL                   string        // 下载的url
 	SavePath              string        // 保存路径带后缀
 	OneThreading          bool          // 强制单线程
 	ThreadingCount        int64         // 下载线程数 默认20
@@ -36,20 +37,20 @@ type DlerUrl struct {
 	Schedule      *int64 // 当前已经下载的字节数
 }
 
-// 初始化Header
-func (dlerurl *DlerUrl) InitHeaders(request *http.Request) {
+// InitHeaders 初始化Header
+func (dlerurl *DlerURL) InitHeaders(request *http.Request) {
 	for idx, val := range dlerurl.Headers {
 		request.Header.Set(idx, val)
 	}
 }
 
-// 判断Client是否为空
-func (dlerurl *DlerUrl) IsClientEmpty() bool {
+// IsClientEmpty 判断Client是否为空
+func (dlerurl *DlerURL) IsClientEmpty() bool {
 	return reflect.DeepEqual(dlerurl.Client, http.Client{})
 }
 
-// 下载完成时的回调
-func (dlerurl *DlerUrl) downloadOver(file *os.File) error {
+// downloadOver 下载完成时的回调
+func (dlerurl *DlerURL) downloadOver(file *os.File) error {
 	// 下载成功，更改临时文件名称
 	err := dlerurl.reTempFileName(file)
 	if err != nil {
@@ -58,8 +59,8 @@ func (dlerurl *DlerUrl) downloadOver(file *os.File) error {
 	return nil
 }
 
-// 初始化结构体
-func (dlerurl *DlerUrl) Init() {
+// Init 初始化结构体
+func (dlerurl *DlerURL) Init() {
 	if dlerurl.ThreadingCount <= 0 {
 		dlerurl.ThreadingCount = 20
 	}
@@ -79,8 +80,8 @@ func (dlerurl *DlerUrl) Init() {
 	dlerurl.Schedule = &schedule
 }
 
-// 开始下载
-func (dlerurl *DlerUrl) Download() error {
+// Download 开始下载
+func (dlerurl *DlerURL) Download() error {
 	dlerurl.Init()
 	isThreading, contentLength, err := dlerurl.isMultithreading()
 	if err != nil {
@@ -109,15 +110,15 @@ func (dlerurl *DlerUrl) Download() error {
 	return nil
 }
 
-// 单线程下载
-func (dlerurl *DlerUrl) downloadStart(file *os.File) error {
+// downloadStart 单线程下载
+func (dlerurl *DlerURL) downloadStart(file *os.File) error {
 	defer file.Close()
 	if dlerurl.IsBar {
 		fmt.Println("单线程下载")
 	}
 	bar := &dlerBar{IsShow: dlerurl.IsBar}
 	bar.dlerBarStart(*dlerurl.ContentLength)
-	request, err := http.NewRequest(dlerurl.Method, dlerurl.Url, dlerurl.Body)
+	request, err := http.NewRequest(dlerurl.Method, dlerurl.URL, dlerurl.Body)
 	if err != nil {
 		bar.dlerBarFinish()
 		return err
@@ -158,8 +159,8 @@ func (dlerurl *DlerUrl) downloadStart(file *os.File) error {
 	return nil
 }
 
-// 创建并获取文件
-func (dlerurl *DlerUrl) creactFile() (*os.File, error) {
+// creactFile 创建并获取文件
+func (dlerurl *DlerURL) creactFile() (*os.File, error) {
 	var file *os.File
 	var startSize int64
 	fileInfo, err := os.Stat(dlerurl.SavePath)
@@ -190,8 +191,8 @@ func (dlerurl *DlerUrl) creactFile() (*os.File, error) {
 	return file, nil
 }
 
-// 创建临时下载文件
-func (dlerurl *DlerUrl) creactTempFile() (*os.File, error) {
+// creactTempFile 创建临时下载文件
+func (dlerurl *DlerURL) creactTempFile() (*os.File, error) {
 	var file *os.File
 	tempFile := fmt.Sprintf("%s.tempDownload", dlerurl.SavePath)
 	_, err := os.Stat(tempFile)
@@ -221,8 +222,8 @@ func (dlerurl *DlerUrl) creactTempFile() (*os.File, error) {
 	return file, nil
 }
 
-// 修改临时下载文件名称
-func (dlerurl *DlerUrl) reTempFileName(file *os.File) error {
+// reTempFileName 修改临时下载文件名称
+func (dlerurl *DlerURL) reTempFileName(file *os.File) error {
 	_ = file.Close()
 	tempFile := fmt.Sprintf("%s.tempDownload", dlerurl.SavePath)
 	fileInfo, err := os.Stat(dlerurl.SavePath)
@@ -258,9 +259,9 @@ func (dlerurl *DlerUrl) reTempFileName(file *os.File) error {
 	return nil
 }
 
-// 判断url是否支持多线程
-func (dlerurl *DlerUrl) isMultithreading() (bool, int64, error) {
-	reqHead, err := http.NewRequest("HEAD", dlerurl.Url, dlerurl.Body)
+// isMultithreading 判断url是否支持多线程
+func (dlerurl *DlerURL) isMultithreading() (bool, int64, error) {
+	reqHead, err := http.NewRequest("HEAD", dlerurl.URL, dlerurl.Body)
 	if err != nil {
 		return false, 0, err
 	}
@@ -276,8 +277,8 @@ func (dlerurl *DlerUrl) isMultithreading() (bool, int64, error) {
 	return true, resData.ContentLength, nil
 }
 
-// 下载所有区块
-func (dlerurl *DlerUrl) threadingDownloadStart(file *os.File) error {
+// threadingDownloadStart 下载所有区块
+func (dlerurl *DlerURL) threadingDownloadStart(file *os.File) error {
 	if dlerurl.IsBar {
 		fmt.Println("多线程下载")
 	}
@@ -337,8 +338,8 @@ func (dlerurl *DlerUrl) threadingDownloadStart(file *os.File) error {
 	}
 }
 
-// 下载一个区块
-func (dlerurl *DlerUrl) downloadSlice(resChannel chan<- error, taskChannel <-chan int, file *os.File, start, end int64, bar *dlerBar, dlerClose *bool, errorCount int64) {
+// downloadSlice 下载一个区块
+func (dlerurl *DlerURL) downloadSlice(resChannel chan<- error, taskChannel <-chan int, file *os.File, start, end int64, bar *dlerBar, dlerClose *bool, errorCount int64) {
 	defer func() { <-taskChannel }()
 	defer func() { recover() }()
 	reqFile, err := dlerurl.getSliceFile(start, end, 0)
@@ -377,9 +378,9 @@ func (dlerurl *DlerUrl) downloadSlice(resChannel chan<- error, taskChannel <-cha
 	atomic.AddInt64(dlerurl.Schedule, int64(batesCount))
 }
 
-// 请求区块数据
-func (dlerurl *DlerUrl) getSliceFile(start, end, errorCount int64) (*http.Request, error) {
-	reqFile, err := http.NewRequest(dlerurl.Method, dlerurl.Url, dlerurl.Body)
+// getSliceFile 请求区块数据
+func (dlerurl *DlerURL) getSliceFile(start, end, errorCount int64) (*http.Request, error) {
+	reqFile, err := http.NewRequest(dlerurl.Method, dlerurl.URL, dlerurl.Body)
 	if err != nil {
 		if errorCount >= 3 {
 			return reqFile, err
@@ -392,7 +393,7 @@ func (dlerurl *DlerUrl) getSliceFile(start, end, errorCount int64) (*http.Reques
 	return reqFile, err
 }
 
-// 简单封装进度条
+// dlerBar 简单封装进度条
 type dlerBar struct {
 	IsShow bool            // 是否显示
 	DlerPb *pb.ProgressBar // pb对象

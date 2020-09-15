@@ -4,24 +4,26 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/fatih/color"
 	"io/ioutil"
 	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/fatih/color"
 )
 
+// RunTxOne 单视频
 func RunTxOne(runType RunType, arg map[string]string) error {
-	err := AnnieDownload(runType.Url, runType.SavePath, runType.CookieFile, runType.DefaultCookie)
+	err := AnnieDownload(runType.URL, runType.SavePath, runType.CookieFile, runType.DefaultCookie)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-// 腾讯归档页：https://v.qq.com/detail/5/52852.html
+// RunTxDetail 腾讯归档页：https://v.qq.com/detail/5/52852.html
 func RunTxDetail(runType RunType, arg map[string]string) error {
 	var (
 		start, end string
@@ -64,11 +66,11 @@ func RunTxDetail(runType RunType, arg map[string]string) error {
 	var apiList []string
 	var id int
 
-	resGetId := regexp.MustCompile(`^(http|https)://v\.qq\.com/detail/\d+/(\d+)\.html$`).FindStringSubmatch(runType.Url)
-	if len(resGetId) < 3 {
+	resGetID := regexp.MustCompile(`^(http|https)://v\.qq\.com/detail/\d+/(\d+)\.html$`).FindStringSubmatch(runType.URL)
+	if len(resGetID) < 3 {
 		return errors.New("获取ID失败")
 	}
-	if id, err = strconv.Atoi(resGetId[2]); err != nil {
+	if id, err = strconv.Atoi(resGetID[2]); err != nil {
 		return errors.New("获取ID失败")
 	}
 
@@ -116,9 +118,9 @@ func RunTxDetail(runType RunType, arg map[string]string) error {
 	return nil
 }
 
-// 腾讯作者页：https://v.qq.com/s/videoplus/1790091432#uin=42ffd591994e622dd2e414ecc3137397
+// RunTxUserList 腾讯作者页：https://v.qq.com/s/videoplus/1790091432#uin=42ffd591994e622dd2e414ecc3137397
 func RunTxUserList(runType RunType, arg map[string]string) error {
-	vuid, err := txGetVuid(runType.Url)
+	vuid, err := txGetVuid(runType.URL)
 	if err != nil {
 		return err
 	}
@@ -194,10 +196,10 @@ func RunTxUserList(runType RunType, arg map[string]string) error {
 	return nil
 }
 
-// 看作者作品列表	look https://v.qq.com/s/videoplus/1790091432
+// RunLookTxUserList 看作者作品列表	look https://v.qq.com/s/videoplus/1790091432
 func RunLookTxUserList(runType RunType, arg map[string]string) error {
-	runType.Url = strings.Replace(runType.Url, "look ", "", -1)
-	vuid, err := txGetVuid(runType.Url)
+	runType.URL = strings.Replace(runType.URL, "look ", "", -1)
+	vuid, err := txGetVuid(runType.URL)
 	if err != nil {
 		return err
 	}
@@ -253,7 +255,7 @@ func RunLookTxUserList(runType RunType, arg map[string]string) error {
 	return nil
 }
 
-// 通过 url 获取 Vuid
+// txGetVuid 通过 url 获取 Vuid
 func txGetVuid(url string) (string, error) {
 	regexps := []*regexp.Regexp{
 		regexp.MustCompile(`^(http|https)://haokan\.baidu\.com/author/(\d+)`),
@@ -270,7 +272,7 @@ func txGetVuid(url string) (string, error) {
 	return "", errors.New("获取Vuid失败")
 }
 
-// 请求腾讯作者作品列表API
+// txGetVideoplusData 请求腾讯作者作品列表API
 func txGetVideoplusData(vuid string, offset, errorCount int) (*TengxunUserVideoList, error) {
 	api := fmt.Sprintf("https://nodeyun.video.qq.com/x/api/videoplus/data?type=all&vuid=%s&last_vid_position=%d&offset=%d&index_context=score&_=%d",
 		vuid, offset, offset, (time.Now().Unix() * 1000),
@@ -309,7 +311,7 @@ func txGetVideoplusData(vuid string, offset, errorCount int) (*TengxunUserVideoL
 
 }
 
-// 腾讯作者作品页数检查
+// txGetUserListPage 腾讯作者作品页数检查
 func txGetUserListPage(vuid string, s, b int) (int, int, error) {
 	resData, err := txGetVideoplusData(vuid, s*10, 0)
 	if err != nil {
@@ -331,7 +333,7 @@ func txGetUserListPage(vuid string, s, b int) (int, int, error) {
 	return txGetUserListPage(vuid, s-b, 1)
 }
 
-// 腾讯归档请求API
+// DetailGetPlaysource 腾讯归档请求API
 func DetailGetPlaysource(url string) (*TengxunPlaysource, error) {
 	var jsonData TengxunPlaysource
 	req, err := http.NewRequest("GET", url, nil)

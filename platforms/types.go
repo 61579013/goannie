@@ -2,26 +2,48 @@ package platforms
 
 import (
 	"fmt"
-	"github.com/fatih/color"
-	"github.com/garyburd/redigo/redis"
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/fatih/color"
+	"github.com/garyburd/redigo/redis"
 )
 
+// Client 默认Cliend
 var Client = http.Client{Timeout: time.Second * 30}
 
+// UserAgentPc 电脑端user-agent
 var UserAgentPc = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/84.0.4147.125 Safari/537.36 Edg/84.0.522.61"
+
+// UserAgentWap 手机端端user-agent
 var UserAgentWap = "Mozilla/5.0 (iPhone; CPU iPhone OS 13_2_3 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/13.0.3 Mobile/15E148 Safari/604.1 Edg/84.0.4147.135"
+
+// AppPath 程序app目录
 var AppPath = fmt.Sprintf("%s\\goannie", os.Getenv("APPDATA"))
+
+// AppBinPath 程序bin目录
 var AppBinPath = fmt.Sprintf("%s\\bin", AppPath)
+
+// AppDataPath 程序data目录
 var AppDataPath = fmt.Sprintf("%s\\data", AppPath)
+
+// AnnieFile 程序annie存放位置
 var AnnieFile = fmt.Sprintf("%s\\annie.exe", AppBinPath)
+
+// FfmpegFile 程序ffmpeg存放位置
 var FfmpegFile = fmt.Sprintf("%s\\ffmpeg.exe", AppBinPath)
+
+// Aria2File 程序aria2存放位置
 var Aria2File = fmt.Sprintf("%s\\aria2c.exe", AppBinPath)
+
+// RedisFile 程序redis存放位置
 var RedisFile = fmt.Sprintf("%s\\redis-server.exe", AppBinPath)
+
+// RedisConfFile 程序redisconf存放位置
 var RedisConfFile = fmt.Sprintf("%s\\redis.windows-service.conf", AppBinPath)
 
+// DownloadPrint 程序下载时打印结构体
 type DownloadPrint struct {
 	Site      string
 	Title     string
@@ -31,13 +53,13 @@ type DownloadPrint struct {
 	SizeBytes int64
 }
 
-// 初始化
+// Init 初始化
 func (d *DownloadPrint) Init(url string) {
 	d.SetSize(url)
 	d.FormatSize()
 }
 
-// 获取文件大小
+// SetSize 获取文件大小
 func (d *DownloadPrint) SetSize(url string) {
 	reqHead, err := http.NewRequest("HEAD", url, nil)
 	if err != nil {
@@ -56,7 +78,7 @@ func (d *DownloadPrint) SetSize(url string) {
 	d.SizeBytes = resData.ContentLength
 }
 
-// 格式化字节
+// FormatSize 格式化字节
 func (d *DownloadPrint) FormatSize() {
 	fileSize := d.SizeBytes
 	if fileSize < 1024 {
@@ -74,7 +96,7 @@ func (d *DownloadPrint) FormatSize() {
 	}
 }
 
-// 打印
+// Print 打印
 func (d DownloadPrint) Print() {
 	color.Set(color.FgBlue, color.Bold)
 	fmt.Printf(" Site:      ")
@@ -105,16 +127,17 @@ func (d DownloadPrint) Print() {
 	fmt.Printf("%s (%d Bytes)\n", d.Size, d.SizeBytes)
 }
 
+// RunType 程序传递信息的主要结构体
 type RunType struct {
-	Url           string
+	URL           string
 	SavePath      string
 	CookieFile    string
 	DefaultCookie string
 	IsDeWeight    bool
-	RedisConn redis.Conn
+	RedisConn     redis.Conn
 }
 
-// 腾讯归档API
+// TengxunPlaysource 腾讯归档API
 type TengxunPlaysource struct {
 	PlaylistItem struct {
 		AsyncParam    string        `json:"asyncParam"`
@@ -149,7 +172,7 @@ type TengxunPlaysource struct {
 	Msg   string `json:"msg"`
 }
 
-// 腾讯作者作品列表API
+// TengxunUserVideoList 腾讯作者作品列表API
 type TengxunUserVideoList struct {
 	RequestID int    `json:"requestId"`
 	Ret       int    `json:"ret"`
@@ -286,7 +309,7 @@ type TengxunUserVideoList struct {
 	} `json:"body"`
 }
 
-// 爱奇艺归档API
+// IqiyiSvlistinfo 爱奇艺归档API
 type IqiyiSvlistinfo struct {
 	Code string `json:"code"`
 	Data map[string][]struct {
@@ -322,13 +345,13 @@ type IqiyiSvlistinfo struct {
 	} `json:"data"`
 }
 
-// 爱奇艺归档html数据
+// IqiyiPlayPageInfo 爱奇艺归档html数据
 type IqiyiPlayPageInfo struct {
 	AlbumId string
 	Cid     string
 }
 
-// 西瓜视频信息API
+// XiguaInfo 西瓜视频信息API
 type XiguaInfo struct {
 	Ck struct {
 	} `json:"_ck"`
@@ -341,7 +364,7 @@ type XiguaInfo struct {
 	Success bool `json:"success"`
 }
 
-// 西瓜TA的视频列表API
+// XiguaUserList 西瓜TA的视频列表API
 type XiguaUserList struct {
 	UserInfo struct {
 		Name string `json:"name"`
@@ -360,7 +383,7 @@ type XiguaUserList struct {
 	} `json:"data"`
 }
 
-// 火锅视频作者视频列表API
+// HuoguoUserVideoList 火锅视频作者视频列表API
 type HuoguoUserVideoList struct {
 	Data struct {
 		ErrCode     int    `json:"errCode"`
@@ -516,7 +539,7 @@ type HuoguoUserVideoList struct {
 	Msg string `json:"msg"`
 }
 
-// 好看视频作者视频列表API
+// HaokanUserVideoList 好看视频作者视频列表API
 type HaokanUserVideoList struct {
 	Errno int    `json:"errno"`
 	Error string `json:"error"`
@@ -583,7 +606,7 @@ type HaokanUserVideoList struct {
 	} `json:"data"`
 }
 
-// 哔哩哔哩视频作者视频列表API
+// BliUserVideoList 哔哩哔哩视频作者视频列表API
 type BliUserVideoList struct {
 	Code    int    `json:"code"`
 	Message string `json:"message"`

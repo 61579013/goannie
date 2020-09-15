@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/fatih/color"
 	"io/ioutil"
 	"math"
 	"net/http"
@@ -12,11 +11,13 @@ import (
 	"strconv"
 	"strings"
 	"time"
+
+	"github.com/fatih/color"
 )
 
-// TA的视频 https://www.ixigua.com/home/85383446500/video/
+// RunXgUserList TA的视频 https://www.ixigua.com/home/85383446500/video/
 func RunXgUserList(runType RunType, arg map[string]string) error {
-	page, count, err := xgGetUserListPage(runType.Url)
+	page, count, err := xgGetUserListPage(runType.URL)
 	if err != nil {
 		return err
 	}
@@ -45,7 +46,7 @@ func RunXgUserList(runType RunType, arg map[string]string) error {
 		return errors.New("最大连接数格式错误")
 	}
 	sleepTime := .5
-	resUserID := regexp.MustCompile("^(http|https)://www\\.ixigua\\.com/home/(\\d+)/").FindStringSubmatch(runType.Url)
+	resUserID := regexp.MustCompile("^(http|https)://www\\.ixigua\\.com/home/(\\d+)/").FindStringSubmatch(runType.URL)
 	if len(resUserID) < 3 {
 		return errors.New("西瓜获取UserID失败")
 	}
@@ -96,7 +97,7 @@ func RunXgUserList(runType RunType, arg map[string]string) error {
 		}
 		if !jsonData.HasMore && len(jsonData.Data) == 0 {
 			// break 机会
-			if breakCount < 10{
+			if breakCount < 10 {
 				breakCount++
 				continue
 			}
@@ -115,11 +116,11 @@ func RunXgUserList(runType RunType, arg map[string]string) error {
 
 	for _, video := range downLoadList {
 		oneRunType := runType
-		oneRunType.Url = video["url"]
+		oneRunType.URL = video["url"]
 		err := RunXgOne(oneRunType, map[string]string{})
 		if err != nil {
 			PrintErrInfo(err.Error())
-		}else{
+		} else {
 			AddVideoID("xigua", video["vid"], runType.RedisConn)
 		}
 	}
@@ -129,16 +130,16 @@ func RunXgUserList(runType RunType, arg map[string]string) error {
 	return nil
 }
 
-// 看作者作品列表 look https://www.ixigua.com/home/85383446500/video/
+// RunLookXgUserList 看作者作品列表 look https://www.ixigua.com/home/85383446500/video/
 func RunLookXgUserList(runType RunType, arg map[string]string) error {
-	runType.Url = strings.Replace(runType.Url, "look ", "", -1)
-	page, count, err := xgGetUserListPage(runType.Url)
+	runType.URL = strings.Replace(runType.URL, "look ", "", -1)
+	page, count, err := xgGetUserListPage(runType.URL)
 	if err != nil {
 		return err
 	}
 	PrintInfo(fmt.Sprintf("总页数：%d  每页个数：%d  总个数：%d", page, 30, count))
 	sleepTime := .5
-	resUserID := regexp.MustCompile("^(http|https)://www\\.ixigua\\.com/home/(\\d+)/").FindStringSubmatch(runType.Url)
+	resUserID := regexp.MustCompile("^(http|https)://www\\.ixigua\\.com/home/(\\d+)/").FindStringSubmatch(runType.URL)
 	if len(resUserID) < 3 {
 		return errors.New("西瓜获取UserID失败")
 	}
@@ -187,7 +188,7 @@ func RunLookXgUserList(runType RunType, arg map[string]string) error {
 		// 判断连续致命错误
 		if !jsonData.HasMore && len(jsonData.Data) == 0 {
 			// break 机会
-			if breakCount < 10{
+			if breakCount < 10 {
 				breakCount++
 				continue
 			}
@@ -209,7 +210,7 @@ func RunLookXgUserList(runType RunType, arg map[string]string) error {
 	return nil
 }
 
-// 请求作者作品列表api
+// xgGetUserListHome 请求作者作品列表api
 func xgGetUserListHome(url, cookiePath string, errorCount int) (*XiguaUserList, error) {
 	var jsonData XiguaUserList
 	req, err := http.NewRequest("GET", url, nil)
@@ -287,9 +288,9 @@ func xgGetUserListPage(url string) (int, int, error) {
 	return int(math.Ceil(float64(count) / 30)), count, nil
 }
 
-// 西瓜单视频 https://www.ixigua.com/6832194590221533707
+// RunXgOne 西瓜单视频 https://www.ixigua.com/6832194590221533707
 func RunXgOne(runType RunType, arg map[string]string) error {
-	itemID, err := xgGetItemID(runType.Url)
+	itemID, err := xgGetItemID(runType.URL)
 	if err != nil {
 		return err
 	}

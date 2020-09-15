@@ -4,17 +4,18 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"gitee.com/rock_rabbit/goannie/godler"
-	"github.com/fatih/color"
-	"github.com/garyburd/redigo/redis"
 	"io/ioutil"
 	"net/http"
 	"os"
 	"os/exec"
 	"strings"
+
+	"gitee.com/rock_rabbit/goannie/godler"
+	"github.com/fatih/color"
+	"github.com/garyburd/redigo/redis"
 )
 
-// 控制台输入
+// GetCmdDataString 控制台输入
 func GetCmdDataString(Info string, resData *string) error {
 	color.Set(color.FgGreen, color.Bold)
 	fmt.Printf("$ %s：", Info)
@@ -26,7 +27,7 @@ func GetCmdDataString(Info string, resData *string) error {
 	return nil
 }
 
-// 使用annie批量下载
+// AnnieDownloadAll 使用annie批量下载
 func AnnieDownloadAll(urlList []map[string]string, runType RunType, pt string) {
 	for _, item := range urlList {
 		err := AnnieDownload(item["url"], runType.SavePath, runType.CookieFile, runType.DefaultCookie)
@@ -38,7 +39,7 @@ func AnnieDownloadAll(urlList []map[string]string, runType RunType, pt string) {
 	}
 }
 
-// 使用annie下载
+// AnnieDownload 使用annie下载
 func AnnieDownload(url, savePath, cookiePath, DefaultCookie string) error {
 	arg := []string{}
 	ccode := GetTxtContent("./ccode.txt")
@@ -69,6 +70,7 @@ func AnnieDownload(url, savePath, cookiePath, DefaultCookie string) error {
 	return nil
 }
 
+// Aria2Download 使用Aria2下载
 func Aria2Download(url, savePath, saveFile, cookiePath string, maxConnectionPerServer int) error {
 	// -c 断点续传
 	// -m 失败重试次数。默认值为：5
@@ -96,27 +98,28 @@ func Aria2Download(url, savePath, saveFile, cookiePath string, maxConnectionPerS
 	return nil
 }
 
-// 打印错误信息
+// PrintErrInfo 打印错误信息
 func PrintErrInfo(errInfo string) {
 	color.Set(color.FgRed, color.Bold)
 	defer color.Unset()
 	fmt.Println("错误信息：" + errInfo)
 }
 
-// 打印日常信息
+// PrintInfo 打印日常信息
 func PrintInfo(info string) {
 	color.Set(color.FgBlue, color.Bold)
 	defer color.Unset()
 	fmt.Println(info)
 }
 
+// PrintInfof 打印日常信息
 func PrintInfof(info string) {
 	color.Set(color.FgBlue, color.Bold)
 	defer color.Unset()
 	fmt.Printf(info)
 }
 
-// 请求 annie
+// GetAnnie 请求 annie
 func GetAnnie() error {
 	IsAnniePath, err := IsExist(AppBinPath)
 	if err != nil {
@@ -133,8 +136,8 @@ func GetAnnie() error {
 	}
 	if !IsAnnieFile {
 		PrintInfo("检查到该机器没有下载 annie 启动下载")
-		dlerurl := godler.DlerUrl{
-			Url:      "http://image.68wu.cn/annie/annie_0.10.3_64.exe",
+		dlerurl := godler.DlerURL{
+			URL:      "http://image.68wu.cn/annie/annie_0.10.3_64.exe",
 			SavePath: AnnieFile,
 			IsBar:    true,
 		}
@@ -146,7 +149,7 @@ func GetAnnie() error {
 	return nil
 }
 
-// 请求 ffmpeg
+// GetFfmpeg 请求 ffmpeg
 func GetFfmpeg() error {
 	IsAnniePath, err := IsExist(AppBinPath)
 	if err != nil {
@@ -163,8 +166,8 @@ func GetFfmpeg() error {
 	}
 	if !IsFfmpegFile {
 		PrintInfo("检查到该机器没有下载 ffmpeg 启动下载")
-		dlerurl := godler.DlerUrl{
-			Url:      "http://image.68wu.cn/ffmpeg/ffmpeg.exe",
+		dlerurl := godler.DlerURL{
+			URL:      "http://image.68wu.cn/ffmpeg/ffmpeg.exe",
 			SavePath: FfmpegFile,
 			IsBar:    true,
 		}
@@ -176,7 +179,7 @@ func GetFfmpeg() error {
 	return nil
 }
 
-// 请求 aria2
+// GetAria2 请求 aria2
 func GetAria2() error {
 	IsAnniePath, err := IsExist(AppBinPath)
 	if err != nil {
@@ -193,8 +196,8 @@ func GetAria2() error {
 	}
 	if !IsAria2File {
 		PrintInfo("检查到该机器没有下载 aria2 启动下载")
-		dlerurl := godler.DlerUrl{
-			Url:      "http://image.68wu.cn/aria2/aria2c.exe",
+		dlerurl := godler.DlerURL{
+			URL:      "http://image.68wu.cn/aria2/aria2c.exe",
 			SavePath: Aria2File,
 			IsBar:    true,
 		}
@@ -206,7 +209,7 @@ func GetAria2() error {
 	return nil
 }
 
-// 请求 redis
+// GetRedis 请求 redis
 func GetRedis() error {
 	IsAnniePath, err := IsExist(AppBinPath)
 	if err != nil {
@@ -223,8 +226,8 @@ func GetRedis() error {
 	}
 	if !IsRedisFile {
 		PrintInfo("检查到该机器没有下载 redis 启动下载")
-		dlerurl := godler.DlerUrl{
-			Url:      "http://image.68wu.cn/redis/redis-server.exe",
+		dlerurl := godler.DlerURL{
+			URL:      "http://image.68wu.cn/redis/redis-server.exe",
 			SavePath: RedisFile,
 			IsBar:    true,
 		}
@@ -238,8 +241,8 @@ func GetRedis() error {
 		return err
 	}
 	if !IsRedisConfFile {
-		dlerurl := godler.DlerUrl{
-			Url:      "http://image.68wu.cn/redis/redis.windows-service.conf",
+		dlerurl := godler.DlerURL{
+			URL:      "http://image.68wu.cn/redis/redis.windows-service.conf",
 			SavePath: RedisConfFile,
 			IsBar:    true,
 		}
@@ -251,20 +254,19 @@ func GetRedis() error {
 	return nil
 }
 
-// 文件夹或文件是否存在
+// IsExist 文件夹或文件是否存在
 func IsExist(path string) (bool, error) {
 	_, err := os.Stat(path)
 	if err != nil {
 		if os.IsNotExist(err) {
 			return false, nil
-		} else {
-			return false, err
 		}
+		return false, err
 	}
 	return true, nil
 }
 
-// 获取txt内容
+// GetTxtContent 获取txt内容
 func GetTxtContent(path string) string {
 	IsCookie, _ := IsExist(path)
 	if !IsCookie {
@@ -281,7 +283,7 @@ func GetTxtContent(path string) string {
 	return string(cotent)
 }
 
-// 设置环境变量
+// SetGoannieEnv 设置环境变量
 func SetGoannieEnv() error {
 	if strings.Index(os.Getenv("PATH"), AppBinPath) == -1 {
 		// 添加环境变量
@@ -293,8 +295,8 @@ func SetGoannieEnv() error {
 	return nil
 }
 
-// 获取跳转真实地址
-func GetRealUrl(url string) (string, error) {
+// GetRealURL 获取跳转真实地址
+func GetRealURL(url string) (string, error) {
 	newClient := Client
 	newClient.CheckRedirect = func(req *http.Request, via []*http.Request) error {
 		return http.ErrUseLastResponse
@@ -315,7 +317,7 @@ func GetRealUrl(url string) (string, error) {
 	return "", errors.New("获取跳转真实地址失败")
 }
 
-//对比库是否存在视频ID
+// IsVideoID 对比库是否存在视频ID
 func IsVideoID(pt, vid string, conn redis.Conn) bool {
 	isVid, _ := redis.Int(conn.Do("SISMEMBER", pt, vid))
 	if isVid == 0 {
@@ -324,7 +326,7 @@ func IsVideoID(pt, vid string, conn redis.Conn) bool {
 	return true
 }
 
-// 存储已下载的视频ID
+// AddVideoID 存储已下载的视频ID
 func AddVideoID(pt, vid string, conn redis.Conn) error {
 	_, err := conn.Do("SADD", pt, vid)
 	if err != nil {
@@ -333,7 +335,7 @@ func AddVideoID(pt, vid string, conn redis.Conn) error {
 	return nil
 }
 
-// 获取已下载的视频ID
+// GetVideoID 获取已下载的视频ID
 func GetVideoID(pt string) (*[]string, error) {
 	AppDataFile := fmt.Sprintf("%s\\%s.json", AppDataPath, pt)
 	IsAppDataPath, err := IsExist(AppDataPath)
@@ -376,7 +378,7 @@ func GetVideoID(pt string) (*[]string, error) {
 	return &data, nil
 }
 
-// 兼容之前的文件存储方式，直接导入到 redis 库
+// TOLeadRedis 兼容之前的文件存储方式，直接导入到 redis 库
 func TOLeadRedis(conn redis.Conn) {
 	ptList := []map[string]string{
 		{
@@ -416,6 +418,7 @@ func TOLeadRedis(conn redis.Conn) {
 	}
 }
 
+// CreactVideoID 创建视频ID
 func CreactVideoID(pt string) error {
 	// 创建
 	AppDataFile := fmt.Sprintf("%s\\%s.json", AppDataPath, pt)
@@ -431,6 +434,7 @@ func CreactVideoID(pt string) error {
 	return nil
 }
 
+// PrintVideoIDCount 打印过滤库个数
 func PrintVideoIDCount(conn redis.Conn) {
 	ptList := []map[string]string{
 		{

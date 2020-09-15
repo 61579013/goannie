@@ -4,31 +4,34 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/fatih/color"
 	"io/ioutil"
 	"math"
 	"net/http"
 	"regexp"
 	"strconv"
 	"time"
+
+	"github.com/fatih/color"
 )
 
+// RunBliOne 单视频
 func RunBliOne(runType RunType, arg map[string]string) error {
-	err := AnnieDownload(runType.Url, runType.SavePath, runType.CookieFile, runType.DefaultCookie)
+	err := AnnieDownload(runType.URL, runType.SavePath, runType.CookieFile, runType.DefaultCookie)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
+// RunBliUserList 作者列表
 func RunBliUserList(runType RunType, arg map[string]string) error {
-	userID, err := bliGetUserID(runType.Url)
+	userID, err := bliGetUserID(runType.URL)
 	if err != nil {
 		return err
 	}
-	tid := bliGetTID(runType.Url)
-	order := bliGetOrder(runType.Url)
-	keyword := bliGetKeyword(runType.Url)
+	tid := bliGetTID(runType.URL)
+	order := bliGetOrder(runType.URL)
+	keyword := bliGetKeyword(runType.URL)
 	page, count, err := bliGetMaxPage(userID, tid, order, keyword)
 	if err != nil {
 		return err
@@ -94,7 +97,7 @@ func RunBliUserList(runType RunType, arg map[string]string) error {
 	}
 	fmt.Println("")
 	PrintInfo(fmt.Sprintf("采集到 %d 个视频", len(downLoadList)))
-	AnnieDownloadAll(downLoadList, runType,"bilibili")
+	AnnieDownloadAll(downLoadList, runType, "bilibili")
 	PrintInfo("全部下载完成")
 	return nil
 }
