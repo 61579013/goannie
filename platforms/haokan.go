@@ -16,11 +16,40 @@ import (
 
 // RunHkOne 单视频
 func RunHkOne(runType RunType, arg map[string]string) error {
+	vid := hkGetVID(runType.URL)
+	// 判断是否过滤重复
+	if vid != "" {
+		isVID := IsVideoID("haokan", vid, runType.RedisConn)
+		if isVID && runType.IsDeWeight {
+			// 判断到了重复
+			PrintErrInfo(RepetitionMsg)
+			return nil
+		}
+	}
 	err := AnnieDownload(runType.URL, runType.SavePath, runType.CookieFile, runType.DefaultCookie)
 	if err != nil {
 		return err
 	}
+	// 存储已下载
+	if vid != "" {
+		AddVideoID("haokan", vid, runType.RedisConn)
+	}
 	return nil
+}
+
+// hkGetVID 通过url获取vid
+func hkGetVID(url string) string {
+	regexps := []*regexp.Regexp{
+		regexp.MustCompile(`^(http|https)://haokan\.baidu\.com/v\?vid=(\d+)($|\?.*?$)`),
+	}
+	for _, regxp := range regexps {
+		resVID := regxp.FindStringSubmatch(url)
+		if len(resVID) < 3 {
+			continue
+		}
+		return resVID[2]
+	}
+	return ""
 }
 
 // RunHkUserList 作者列表

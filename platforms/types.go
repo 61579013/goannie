@@ -10,6 +10,9 @@ import (
 	"github.com/garyburd/redigo/redis"
 )
 
+// RepetitionMsg 视频重复下载时的提示信息
+const RepetitionMsg = "检测到当前视频重复下载，因之前设置了过滤重复，直接跳过当前下载。"
+
 // Client 默认Cliend
 var Client = http.Client{Timeout: time.Second * 30}
 

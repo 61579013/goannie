@@ -12,11 +12,55 @@ import (
 
 // RunIqyOne 单视频
 func RunIqyOne(runType RunType, arg map[string]string) error {
+	vid := IqyGetVID(runType.URL)
+	// 判断是否过滤重复
+	if vid != "" {
+		isVID := IsVideoID("iqiyi", vid, runType.RedisConn)
+		if isVID && runType.IsDeWeight {
+			// 判断到了重复
+			PrintErrInfo(RepetitionMsg)
+			return nil
+		}
+	}
 	err := AnnieDownload(runType.URL, runType.SavePath, runType.CookieFile, runType.DefaultCookie)
 	if err != nil {
 		return err
 	}
+	// 存储已下载
+	if vid != "" {
+		AddVideoID("iqiyi", vid, runType.RedisConn)
+	}
 	return nil
+}
+
+// IqyGetVID 通过请求获取vid
+func IqyGetVID(url string) string {
+	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return ""
+	}
+	req.Header.Set("accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9")
+	req.Header.Set("referer", "https://www.iqiyi.com/")
+	req.Header.Set("user-agent", UserAgentPc)
+	resP, err := Client.Do(req)
+	if err != nil {
+		return ""
+	}
+	defer resP.Body.Close()
+	if resP.StatusCode != 200 {
+		return ""
+	}
+	body, err := ioutil.ReadAll(resP.Body)
+	if err != nil {
+		return ""
+	}
+	content := string(body)
+
+	getVIDList := regexp.MustCompile(`param\['vid'\] = "(.*?)";`).FindStringSubmatch(content)
+	if len(getVIDList) < 2 {
+		return ""
+	}
+	return getVIDList[1]
 }
 
 // RunIqyDetail 爱奇艺归档页：https://www.iqiyi.com/a_19rrht2ok5.html

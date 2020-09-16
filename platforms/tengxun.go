@@ -16,11 +16,43 @@ import (
 
 // RunTxOne 单视频
 func RunTxOne(runType RunType, arg map[string]string) error {
+	vid := TxGetVID(runType.URL)
+	// 判断是否过滤重复
+	if vid != "" {
+		isVID := IsVideoID("tengxun", vid, runType.RedisConn)
+		if isVID && runType.IsDeWeight {
+			// 判断到了重复
+			PrintErrInfo(RepetitionMsg)
+			return nil
+		}
+	}
 	err := AnnieDownload(runType.URL, runType.SavePath, runType.CookieFile, runType.DefaultCookie)
 	if err != nil {
 		return err
 	}
+	// 存储已下载
+	if vid != "" {
+		AddVideoID("tengxun", vid, runType.RedisConn)
+	}
 	return nil
+}
+
+// TxGetVID 通过url获取vid
+func TxGetVID(url string) string {
+	regexps := []*regexp.Regexp{
+		regexp.MustCompile(`^(http|https)://v\.qq\.com/x/cover/.*?/(.*?)\.html($|\?.*?$)`),
+		regexp.MustCompile(`^(http|https)://v\.qq\.com/x/cover/(.*?)\.html($|\?.*?$)`),
+		regexp.MustCompile(`^(http|https)://v\.qq\.com/x/page/.*?/(.*?)\.html($|\?.*?$)`),
+		regexp.MustCompile(`^(http|https)://v\.qq\.com/x/page/(.*?)\.html($|\?.*?$)`),
+	}
+	for _, regxp := range regexps {
+		resVID := regxp.FindStringSubmatch(url)
+		if len(resVID) < 3 {
+			continue
+		}
+		return resVID[2]
+	}
+	return ""
 }
 
 // RunTxDetail 腾讯归档页：https://v.qq.com/detail/5/52852.html

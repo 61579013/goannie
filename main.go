@@ -16,8 +16,8 @@ import (
 	"github.com/garyburd/redigo/redis"
 )
 
-var goannieVersion = "v0.0.14"
-var goannieUpdateTime = "2020-09-15"
+var goannieVersion = "v0.0.15"
+var goannieUpdateTime = "2020-09-16"
 var goannieTitle = `
                                         __           
    __     ___      __      ___     ___ /\_\     __   
@@ -303,10 +303,10 @@ GETSAVEPATH:
 			goto GETSAVEPATH
 		}
 	}
-	// 是否去重
+	// 是否过滤重复下载？
 	var isDeWeight string
 	isDeWeightBool := true
-	err = getInput("是否去重？ yes or no (yse)", &isDeWeight)
+	err = getInput("是否过滤重复下载？ yes or no (yse)", &isDeWeight)
 	if isDeWeight == "no" {
 		isDeWeightBool = false
 	}

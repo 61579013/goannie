@@ -16,11 +16,41 @@ import (
 
 // RunBliOne 单视频
 func RunBliOne(runType RunType, arg map[string]string) error {
+	bvid := BliGetBvid(runType.URL)
+	// 判断是否过滤重复
+	if bvid != "" {
+		isVID := IsVideoID("bilibili", bvid, runType.RedisConn)
+		if isVID && runType.IsDeWeight {
+			// 判断到了重复
+			PrintErrInfo(RepetitionMsg)
+			return nil
+		}
+	}
 	err := AnnieDownload(runType.URL, runType.SavePath, runType.CookieFile, runType.DefaultCookie)
 	if err != nil {
 		return err
 	}
+	// 存储已下载
+	if bvid != "" {
+		AddVideoID("bilibili", bvid, runType.RedisConn)
+	}
 	return nil
+}
+
+// BliGetBvid 通过url获取bvid
+func BliGetBvid(url string) string {
+	regexps := []*regexp.Regexp{
+		regexp.MustCompile(`^(http|https)://www\.bilibili\.com/video/(\w+)($|\?.*?$)`),
+		regexp.MustCompile(`^(http|https)://www\.bilibili\.com/bangumi/play/(\w+)($|\?.*?$)`),
+	}
+	for _, regxp := range regexps {
+		Bvid := regxp.FindStringSubmatch(url)
+		if len(Bvid) < 3 {
+			continue
+		}
+		return Bvid[2]
+	}
+	return ""
 }
 
 // RunBliUserList 作者列表
