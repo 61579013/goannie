@@ -46,7 +46,7 @@ func RunXgUserList(runType RunType, arg map[string]string) error {
 		return errors.New("最大连接数格式错误")
 	}
 	sleepTime := .5
-	resUserID := regexp.MustCompile("^(http|https)://www\\.ixigua\\.com/home/(\\d+)/").FindStringSubmatch(runType.URL)
+	resUserID := regexp.MustCompile(`^(http|https)://www\.ixigua\.com/home/(\d+)`).FindStringSubmatch(runType.URL)
 	if len(resUserID) < 3 {
 		return errors.New("西瓜获取UserID失败")
 	}
@@ -139,7 +139,7 @@ func RunLookXgUserList(runType RunType, arg map[string]string) error {
 	}
 	PrintInfo(fmt.Sprintf("总页数：%d  每页个数：%d  总个数：%d", page, 30, count))
 	sleepTime := .5
-	resUserID := regexp.MustCompile("^(http|https)://www\\.ixigua\\.com/home/(\\d+)/").FindStringSubmatch(runType.URL)
+	resUserID := regexp.MustCompile(`^(http|https)://www\.ixigua\.com/home/(\d+)`).FindStringSubmatch(runType.URL)
 	if len(resUserID) < 3 {
 		return errors.New("西瓜获取UserID失败")
 	}
