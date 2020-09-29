@@ -1,12 +1,9 @@
 package platforms
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
-	"io/ioutil"
 	"math"
-	"net/http"
 	"regexp"
 	"strconv"
 	"time"
@@ -189,28 +186,12 @@ func bliGetKeyword(url string) string {
 func bliGetSpaceSearch(userID, tid, order, keyword string, page int) (*BliUserVideoList, error) {
 	api := fmt.Sprintf("https://api.bilibili.com/x/space/arc/search?mid=%s&ps=30&tid=%s&pn=%d&keyword=%s&order=%s&jsonp=jsonp", userID, tid, page, keyword, order)
 	var jsonData BliUserVideoList
-	req, err := http.NewRequest("GET", api, nil)
-	if err != nil {
-		return &jsonData, err
-	}
-	req.Header.Set("accept", "application/json, text/plain, */*")
-	req.Header.Set("referer", "https://space.bilibili.com/")
-	req.Header.Set("user-agent", UserAgentPc)
-	resP, err := Client.Do(req)
-	if err != nil {
-		return &jsonData, err
-	}
-	defer resP.Body.Close()
-	if resP.StatusCode != 200 {
-		return &jsonData, errors.New("请求失败")
-	}
-	body, err := ioutil.ReadAll(resP.Body)
-	if err != nil {
-		return &jsonData, err
-	}
-	err = json.Unmarshal(body, &jsonData)
-	if err != nil {
-		return &jsonData, err
+	if err := RequestGetJSON(api, map[string]string{
+		"accept":     "application/json, text/plain, */*",
+		"referer":    "https://space.bilibili.com/",
+		"user-agent": UserAgentPc,
+	}, &jsonData); err != nil {
+		return nil, err
 	}
 	if jsonData.Code != 0 {
 		return &jsonData, errors.New(jsonData.Message)

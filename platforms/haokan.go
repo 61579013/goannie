@@ -1,12 +1,10 @@
 package platforms
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"math"
-	"net/http"
 	"regexp"
 	"strconv"
 	"time"
@@ -150,28 +148,12 @@ func hkGetUserID(url string) (string, error) {
 func hkGetUserVideoList(userID, ctime string) (*HaokanUserVideoList, error) {
 	api := fmt.Sprintf("https://haokan.baidu.com/author/%s?_format=json&rn=16&ctime=%s&_api=1", userID, ctime)
 	var jsonData HaokanUserVideoList
-	req, err := http.NewRequest("GET", api, nil)
-	if err != nil {
-		return &jsonData, err
-	}
-	req.Header.Set("accept", "*/*")
-	req.Header.Set("referer", "https://haokan.baidu.com/")
-	req.Header.Set("user-agent", UserAgentPc)
-	resP, err := Client.Do(req)
-	if err != nil {
-		return &jsonData, err
-	}
-	defer resP.Body.Close()
-	if resP.StatusCode != 200 {
-		return &jsonData, errors.New("请求失败")
-	}
-	body, err := ioutil.ReadAll(resP.Body)
-	if err != nil {
-		return &jsonData, err
-	}
-	err = json.Unmarshal(body, &jsonData)
-	if err != nil {
-		return &jsonData, err
+	if err := RequestGetJSON(api, map[string]string{
+		"accept":     "*/*",
+		"referer":    "https://haokan.baidu.com/",
+		"user-agent": UserAgentPc,
+	}, &jsonData); err != nil {
+		return nil, err
 	}
 	if jsonData.Errno != 0 {
 		return &jsonData, errors.New(jsonData.Error)
@@ -181,14 +163,11 @@ func hkGetUserVideoList(userID, ctime string) (*HaokanUserVideoList, error) {
 
 func hkGetMaxPage(userID string) (int, int, error) {
 	api := fmt.Sprintf("https://haokan.baidu.com/author/%s", userID)
-	req, err := http.NewRequest("GET", api, nil)
-	if err != nil {
-		return 0, 0, err
-	}
-	req.Header.Set("accept", "*/*")
-	req.Header.Set("referer", "https://haokan.baidu.com/")
-	req.Header.Set("user-agent", UserAgentPc)
-	resP, err := Client.Do(req)
+	resP, err := RequestGet(api, map[string]string{
+		"accept":     "*/*",
+		"referer":    "https://haokan.baidu.com/",
+		"user-agent": UserAgentPc,
+	})
 	if err != nil {
 		return 0, 0, err
 	}

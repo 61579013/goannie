@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"io/ioutil"
-	"net/http"
 	"regexp"
 	"strconv"
 	"strings"
@@ -310,37 +309,20 @@ func txGetVideoplusData(vuid string, offset, errorCount int) (*TengxunUserVideoL
 		vuid, offset, offset, (time.Now().Unix() * 1000),
 	)
 	var jsonData TengxunUserVideoList
-	req, err := http.NewRequest("GET", api, nil)
-	if err != nil {
-		return &jsonData, err
-	}
-	req.Header.Set("accept", "*/*")
-	req.Header.Set("referer", "https://v.qq.com/")
-	req.Header.Set("user-agent", UserAgentPc)
-	resP, err := Client.Do(req)
-	if err != nil {
-		return &jsonData, err
-	}
-	defer resP.Body.Close()
-	if resP.StatusCode != 200 {
+	if err := RequestGetJSON(api, map[string]string{
+		"accept":     "*/*",
+		"referer":    "https://v.qq.com/",
+		"user-agent": UserAgentPc,
+	}, &jsonData); err != nil {
 		if errorCount < 3 {
 			return txGetVideoplusData(vuid, offset, errorCount+1)
 		}
-		return &jsonData, errors.New("请求失败")
-	}
-	body, err := ioutil.ReadAll(resP.Body)
-	if err != nil {
-		return &jsonData, err
-	}
-	err = json.Unmarshal(body, &jsonData)
-	if err != nil {
-		return &jsonData, err
+		return nil, err
 	}
 	if jsonData.ErrorMsg != "" {
 		return &jsonData, errors.New(jsonData.ErrorMsg)
 	}
 	return &jsonData, nil
-
 }
 
 // txGetUserListPage 腾讯作者作品页数检查
@@ -368,14 +350,11 @@ func txGetUserListPage(vuid string, s, b int) (int, int, error) {
 // DetailGetPlaysource 腾讯归档请求API
 func DetailGetPlaysource(url string) (*TengxunPlaysource, error) {
 	var jsonData TengxunPlaysource
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return &jsonData, err
-	}
-	req.Header.Set("accept", "*/*")
-	req.Header.Set("referer", "https://v.qq.com/")
-	req.Header.Set("user-agent", UserAgentPc)
-	resP, err := Client.Do(req)
+	resP, err := RequestGet(url, map[string]string{
+		"accept":     "*/*",
+		"referer":    "https://v.qq.com/",
+		"user-agent": UserAgentPc,
+	})
 	if err != nil {
 		return &jsonData, err
 	}

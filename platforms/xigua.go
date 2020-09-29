@@ -1,7 +1,6 @@
 package platforms
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -213,40 +212,15 @@ func RunLookXgUserList(runType RunType, arg map[string]string) error {
 // xgGetUserListHome 请求作者作品列表api
 func xgGetUserListHome(url, cookiePath string, errorCount int) (*XiguaUserList, error) {
 	var jsonData XiguaUserList
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
+	if err := RequestGetJSON(url, map[string]string{
+		"accept":     "application/json",
+		"cookie":     GetTxtContent(cookiePath),
+		"referer":    url,
+		"user-agent": UserAgentWap,
+	}, &jsonData); err != nil {
 		if errorCount < 3 {
 			return xgGetUserListHome(url, cookiePath, errorCount+1)
 		}
-		return &jsonData, err
-	}
-	req.Header.Set("accept", "application/json")
-	req.Header.Set("cookie", GetTxtContent(cookiePath))
-	req.Header.Set("referer", url)
-	req.Header.Set("user-agent", UserAgentWap)
-	resP, err := Client.Do(req)
-	if err != nil {
-		if errorCount < 3 {
-			return xgGetUserListHome(url, cookiePath, errorCount+1)
-		}
-		return &jsonData, err
-	}
-	defer resP.Body.Close()
-	if resP.StatusCode != 200 {
-		if errorCount < 3 {
-			return xgGetUserListHome(url, cookiePath, errorCount+1)
-		}
-		return &jsonData, errors.New("请求失败")
-	}
-	body, err := ioutil.ReadAll(resP.Body)
-	if err != nil {
-		if errorCount < 3 {
-			return xgGetUserListHome(url, cookiePath, errorCount+1)
-		}
-		return &jsonData, err
-	}
-	err = json.Unmarshal(body, &jsonData)
-	if err != nil {
 		return &jsonData, errors.New("大概是速度太快")
 	}
 	if jsonData.Message != "success" {
@@ -260,15 +234,11 @@ func xgGetUserListHome(url, cookiePath string, errorCount int) (*XiguaUserList, 
 
 // 获取TA的视频总页数
 func xgGetUserListPage(url string) (int, int, error) {
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return 0, 0, err
-	}
-	req.Header.Set("accept", "*/*")
-	//req.Header.Set("cookie", GetTxtContent(cookiePath))
-	req.Header.Set("referer", url)
-	req.Header.Set("user-agent", UserAgentPc)
-	resP, err := Client.Do(req)
+	resP, err := RequestGet(url, map[string]string{
+		"accept":     "*/*",
+		"referer":    url,
+		"user-agent": UserAgentPc,
+	})
 	if err != nil {
 		return 0, 0, err
 	}
@@ -349,29 +319,11 @@ func xgGetItemID(url string) (string, error) {
 func xgGetVideoID(itemID, cookiePath string) (string, string, error) {
 	var jsonData XiguaInfo
 	url := fmt.Sprintf("https://m.365yg.com/i%s/info/", itemID)
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return "", "", err
-	}
-	req.Header.Set("accept", "*/*")
-	//req.Header.Set("cookie", GetTxtContent(cookiePath))
-	req.Header.Set("referer", url)
-	req.Header.Set("user-agent", UserAgentPc)
-	resP, err := Client.Do(req)
-	if err != nil {
-		return "", "", err
-	}
-	defer resP.Body.Close()
-	if resP.StatusCode != 200 {
-		return "", "", errors.New("请求失败")
-	}
-	body, err := ioutil.ReadAll(resP.Body)
-	if err != nil {
-		return "", "", err
-	}
-	content := string(body)
-	err = json.Unmarshal([]byte(content), &jsonData)
-	if err != nil {
+	if err := RequestGetJSON(url, map[string]string{
+		"accept":     "*/*",
+		"referer":    url,
+		"user-agent": UserAgentPc,
+	}, &jsonData); err != nil {
 		return "", "", err
 	}
 	if !jsonData.Success {

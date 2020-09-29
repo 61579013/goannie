@@ -1,7 +1,6 @@
 package platforms
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -138,30 +137,13 @@ func RunIqyDetail(runType RunType, arg map[string]string) error {
 // DetailGetSvlistinfo 爱奇艺归档请求API
 func DetailGetSvlistinfo(url, cookiePath string) (*IqiyiSvlistinfo, error) {
 	var jsonData IqiyiSvlistinfo
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return &jsonData, err
-	}
-	req.Header.Set("accept", "*/*")
-	req.Header.Set("cookie", GetTxtContent(cookiePath))
-	req.Header.Set("referer", "https://www.iqiyi.com/")
-	req.Header.Set("user-agent", UserAgentPc)
-	resP, err := Client.Do(req)
-	if err != nil {
-		return &jsonData, err
-	}
-	defer resP.Body.Close()
-	if resP.StatusCode != 200 {
-		return &jsonData, errors.New("请求失败")
-	}
-	body, err := ioutil.ReadAll(resP.Body)
-	if err != nil {
-		return &jsonData, err
-	}
-	content := string(body)
-	err = json.Unmarshal([]byte(content), &jsonData)
-	if err != nil {
-		return &jsonData, err
+	if err := RequestGetJSON(url, map[string]string{
+		"accept":     "*/*",
+		"cookie":     GetTxtContent(cookiePath),
+		"referer":    "https://www.iqiyi.com/",
+		"user-agent": UserAgentPc,
+	}, &jsonData); err != nil {
+		return nil, err
 	}
 	if jsonData.Code != "A00000" {
 		return &jsonData, errors.New("爱奇艺请求错误：" + jsonData.Code)
@@ -172,15 +154,12 @@ func DetailGetSvlistinfo(url, cookiePath string) (*IqiyiSvlistinfo, error) {
 // DetailGetPlayPageInfo 爱奇艺归档请求HTML
 func DetailGetPlayPageInfo(url, cookiePath string) (*IqiyiPlayPageInfo, error) {
 	var jsonData IqiyiPlayPageInfo
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return &jsonData, err
-	}
-	req.Header.Set("accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9")
-	req.Header.Set("cookie", GetTxtContent(cookiePath))
-	req.Header.Set("referer", "https://www.iqiyi.com/")
-	req.Header.Set("user-agent", UserAgentPc)
-	resP, err := Client.Do(req)
+	resP, err := RequestGet(url, map[string]string{
+		"accept":     "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+		"cookie":     GetTxtContent(cookiePath),
+		"referer":    "https://www.iqiyi.com/",
+		"user-agent": UserAgentPc,
+	})
 	if err != nil {
 		return &jsonData, err
 	}
