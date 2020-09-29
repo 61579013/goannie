@@ -14,6 +14,10 @@ import (
 // RunBliOne 单视频
 func RunBliOne(runType RunType, arg map[string]string) error {
 	bvid := BliGetBvid(runType.URL)
+	// 判断是否需要多p交易
+	if BliIsP(bvid) {
+		return BliGetVideoP(runType, bvid)
+	}
 	// 判断是否过滤重复
 	if bvid != "" {
 		isVID := IsVideoID("bilibili", bvid, runType.RedisConn)
@@ -31,6 +35,70 @@ func RunBliOne(runType RunType, arg map[string]string) error {
 	if bvid != "" {
 		AddVideoID("bilibili", bvid, runType.RedisConn)
 	}
+	return nil
+}
+
+// BliIsP 判断是否需要多P交易
+func BliIsP(bvid string) bool {
+	url := "https://api.bilibili.com/x/player/pagelist?bvid=%s&jsonp=json"
+	var jsonData BliVideoP
+	if err := RequestGetJSON(fmt.Sprintf(url, bvid), map[string]string{
+		"accept":     "*/*",
+		"referer":    "https://www.bilibili.com/",
+		"user-agent": UserAgentPc,
+	}, &jsonData); err != nil {
+		return false
+	}
+	if len(jsonData.Data) > 1 {
+		return true
+	}
+	return false
+}
+
+// BliGetVideoP 多p交易
+func BliGetVideoP(runType RunType, bvid string) error {
+	url := "https://api.bilibili.com/x/player/pagelist?bvid=%s&jsonp=json"
+	var jsonData BliVideoP
+	if err := RequestGetJSON(fmt.Sprintf(url, bvid), map[string]string{
+		"accept":     "*/*",
+		"referer":    "https://www.bilibili.com/",
+		"user-agent": UserAgentPc,
+	}, &jsonData); err != nil {
+		return err
+	}
+	maxP := len(jsonData.Data)
+	PrintInfo(fmt.Sprintf("视频选集数量：%d", maxP))
+	var (
+		start, end string
+	)
+	if err := GetCmdDataString("请输入起始P", &start); err != nil {
+		return err
+	}
+	startInt, err := strconv.Atoi(start)
+	if err != nil || startInt > maxP || startInt <= 0 {
+		return errors.New("起始P格式错误")
+	}
+	if err := GetCmdDataString("请输入结束P", &end); err != nil {
+		return err
+	}
+	endInt, err := strconv.Atoi(end)
+	if err != nil || endInt > maxP || endInt < startInt || endInt <= 0 {
+		return errors.New("结束P格式错误")
+	}
+	var downLoadList []map[string]string
+
+	for idx, item := range jsonData.Data {
+		if (idx+1) >= startInt && (idx+1) <= endInt {
+			downLoadList = append(downLoadList, map[string]string{
+				"vid":   fmt.Sprintf("bvid_%d", item.Page),
+				"title": item.Part,
+				"url":   fmt.Sprintf("https://www.bilibili.com/video/%s?p=%d", bvid, item.Page),
+			})
+		}
+	}
+	PrintInfo(fmt.Sprintf("采集到 %d 个视频", len(downLoadList)))
+	AnnieDownloadAll(downLoadList, runType, "bilibili")
+	PrintInfo("全部下载完成")
 	return nil
 }
 

@@ -663,6 +663,16 @@ type BliUserVideoList struct {
 	} `json:"data"`
 }
 
+// BliVideoP 多P api
+type BliVideoP struct {
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+	Data    []struct {
+		Page int    `json:"page"`
+		Part string `json:"part"`
+	} `json:"data"`
+}
+
 // DouyinVideoList 抖音视频作者列表API
 type DouyinVideoList struct {
 	AwemeList []struct {
