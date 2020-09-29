@@ -662,3 +662,67 @@ type BliUserVideoList struct {
 		} `json:"page"`
 	} `json:"data"`
 }
+
+// DouyinVideoList 抖音视频作者列表API
+type DouyinVideoList struct {
+	AwemeList []struct {
+		AwemeID   string `json:"aweme_id"`
+		Desc      string `json:"desc"`
+		ShareInfo struct {
+			ShareTitle string `json:"share_title"`
+		} `json:"share_info"`
+		ShareURL string `json:"share_url"`
+		Video    struct {
+			DownloadAddr struct {
+				URI      string   `json:"uri"`
+				DataSize int      `json:"data_size"`
+				Height   int      `json:"height"`
+				Width    int      `json:"width"`
+				URLList  []string `json:"url_list"`
+			} `json:"download_addr"`
+		} `json:"video"`
+	} `json:"aweme_list"`
+	HasMore    int `json:"has_more"`
+	MaxCursor  int `json:"max_cursor"`
+	MinCursor  int `json:"min_cursor"`
+	StatusCode int `json:"status_code"`
+}
+
+// DouyinUserInfo 抖音作者信息
+type DouyinUserInfo struct {
+	StatusCode int `json:"status_code"`
+	UserInfo   struct {
+		Nickname        string `json:"nickname"`
+		AwemeCount      int    `json:"aweme_count"`
+		FavoritingCount int    `json:"favoriting_count"`
+		FollowerCount   int    `json:"follower_count"`
+		UID             string `json:"uid"`
+	} `json:"user_info"`
+}
+
+// DouyinVideoInfo 抖音视频信息
+type DouyinVideoInfo struct {
+	Title    string
+	Widht    int
+	Height   int
+	Duration int
+	Ratio    string
+	URI      string
+	AwemeID  string
+}
+
+// DouyinVideoItem 视频信息接口
+type DouyinVideoItem struct {
+	StatusCode int `json:"status_code"`
+	ItemList   []struct {
+		Desc    string `json:"desc"`
+		AwemeID string `json:"aweme_id"`
+		Video   struct {
+			Widht    int    `json:"width"`
+			Height   int    `json:"height"`
+			Ratio    string `json:"ratio"`
+			Duration int    `json:"duration"`
+			URI      string `json:"vid"`
+		} `json:"video"`
+	} `json:"item_list"`
+}

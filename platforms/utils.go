@@ -321,6 +321,10 @@ func PrintVideoIDCount(conn redis.Conn) {
 			"name":  "西瓜视频",
 			"pt":    "xigua",
 			"count": "",
+		}, {
+			"name":  "抖音视频",
+			"pt":    "douyin",
+			"count": "",
 		},
 	}
 	for idx, item := range ptList {
@@ -329,4 +333,38 @@ func PrintVideoIDCount(conn redis.Conn) {
 		fmt.Printf("%s：%s  ", item["name"], ptList[idx]["count"])
 	}
 	fmt.Println("")
+}
+
+// RequestGet 通用get请求
+func RequestGet(url string, headers map[string]string) (*http.Response, error) {
+	request, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return nil, err
+	}
+	for idx, item := range headers {
+		request.Header.Set(idx, item)
+	}
+	res, err := Client.Do(request)
+	if err != nil {
+		return nil, err
+	}
+	return res, nil
+}
+
+// RequestGetJSON 请求获取json
+func RequestGetJSON(url string, headers map[string]string, v interface{}) error {
+	res, err := RequestGet(url, headers)
+	if err != nil {
+		return err
+	}
+	defer res.Body.Close()
+	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(body, v)
+	if err != nil {
+		return err
+	}
+	return nil
 }

@@ -298,7 +298,7 @@ func RunXgOne(runType RunType, arg map[string]string) error {
 	if err != nil {
 		return err
 	}
-	downloadUrl, err := xgDownloadUrl(itemID, videoID)
+	downloadURL, err := xgDownloadUrl(itemID, videoID)
 	if err != nil {
 		return err
 	}
@@ -310,7 +310,7 @@ func RunXgOne(runType RunType, arg map[string]string) error {
 		"",
 		0,
 	}
-	dlpt.Init(downloadUrl)
+	dlpt.Init(downloadURL)
 	dlpt.Print()
 	maxConnectionPerServer := 1
 	if _, ok := arg["maxConnectionPerServer"]; ok {
@@ -319,7 +319,7 @@ func RunXgOne(runType RunType, arg map[string]string) error {
 			return err
 		}
 	}
-	err = Aria2Download(downloadUrl, runType.SavePath, fmt.Sprintf("%s.mp4", title), runType.CookieFile, maxConnectionPerServer)
+	err = Aria2Download(downloadURL, runType.SavePath, fmt.Sprintf("%s.mp4", title), runType.CookieFile, maxConnectionPerServer)
 	if err != nil {
 		return err
 	}

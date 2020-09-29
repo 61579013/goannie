@@ -16,8 +16,8 @@ import (
 	"github.com/garyburd/redigo/redis"
 )
 
-var goannieVersion = "v0.0.16"
-var goannieUpdateTime = "2020-09-25"
+var goannieVersion = "v0.0.17"
+var goannieUpdateTime = "2020-09-29"
 var goannieTitle = `
                                         __           
    __     ___      __      ___     ___ /\_\     __   
@@ -85,6 +85,34 @@ func init() {
 	// 初始化支持平台
 	platformList = []Platform{
 		{
+			"抖音视频",
+			[]URLRegexp{
+				{
+					"one",
+					"单视频		https://www.iesdouyin.com/share/video/6877354382132808971",
+					[]*regexp.Regexp{
+						regexp.MustCompile(`^(http|https)://www\.iesdouyin\.com/share/video/\d+`),
+					},
+					pf.RunDyOne,
+				}, {
+					"userList",
+					"作者视频		https://www.iesdouyin.com/share/user/2836383897749943?sec_uid=xxxxx",
+					[]*regexp.Regexp{
+						regexp.MustCompile(`^(http|https)://www\.iesdouyin\.com/share/user/\d+\?sec_uid=.*?`),
+					},
+					pf.RunDyUserList,
+				}, {
+					"shortURL",
+					"短链接		https://v.douyin.com/JDq8uv7/",
+					[]*regexp.Regexp{
+						regexp.MustCompile(`^(http|https)://v\.douyin\.com/.*?`),
+					},
+					pf.RunDyShortURL,
+				},
+			},
+			"douyin.txt",
+			"",
+		}, {
 			"腾讯视频",
 			[]URLRegexp{
 				{
@@ -395,7 +423,7 @@ func printHello(conn redis.Conn) {
 	for _, item := range platformList {
 		item.printInfo()
 		color.Set(color.FgHiBlack, color.Bold)
-		fmt.Printf("cookie 设置：在goannie.exe同级目录中新建 %s 写入cookie=xxx;xxx=xxx;格式即可。\n", item.CookieFile)
+		fmt.Printf("cookie 设置：在goannie.exe同级目录中新建 %s 写入name=value;name=value....格式即可。\n", item.CookieFile)
 		if item.Name == "腾讯视频" {
 			fmt.Println("ccode 和 ckey 设置：在goannie.exe同级目录中新建 ccode.txt 和 ckey.txt 写入其中即可。")
 		}
