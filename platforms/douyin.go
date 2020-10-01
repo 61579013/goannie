@@ -20,7 +20,7 @@ func RunDyShortURL(runType RunType, arg map[string]string) error {
 	runType.URL = url
 	// 作者视频匹配
 	regexpsUserList := []*regexp.Regexp{
-		regexp.MustCompile(`^(http|https)://www\.iesdouyin\.com/share/user/\d+\?sec_uid=(.*?)(&|$)`),
+		regexp.MustCompile(`^(http|https)://www\.iesdouyin\.com/share/user/\d+\?.*?sec_uid=(.*?)(&|$)`),
 	}
 	// 单视频匹配
 	regexpsOne := []*regexp.Regexp{
@@ -126,7 +126,7 @@ func RunDyUserList(runType RunType, arg map[string]string) error {
 // DyGetSecUID 获取 sec_uid
 func DyGetSecUID(url string) (string, error) {
 	regexps := []*regexp.Regexp{
-		regexp.MustCompile(`^(http|https)://www\.iesdouyin\.com/share/user/\d+\?sec_uid=(.*?)&`),
+		regexp.MustCompile(`^(http|https)://www\.iesdouyin\.com/share/user/\d+\?.*?sec_uid=(.*?)&`),
 	}
 	for _, regxp := range regexps {
 		resItemID := regxp.FindStringSubmatch(url)

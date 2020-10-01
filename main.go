@@ -16,8 +16,8 @@ import (
 	"github.com/garyburd/redigo/redis"
 )
 
-var goannieVersion = "v0.0.18"
-var goannieUpdateTime = "2020-09-29"
+var goannieVersion = "v0.0.19"
+var goannieUpdateTime = "2020-10-01"
 var goannieTitle = `
                                         __           
    __     ___      __      ___     ___ /\_\     __   
@@ -98,7 +98,7 @@ func init() {
 					"userList",
 					"作者视频		https://www.iesdouyin.com/share/user/2836383897749943?sec_uid=xxxxx",
 					[]*regexp.Regexp{
-						regexp.MustCompile(`^(http|https)://www\.iesdouyin\.com/share/user/\d+\?sec_uid=.*?`),
+						regexp.MustCompile(`^(http|https)://www\.iesdouyin\.com/share/user/\d+\?.*?sec_uid=.*?`),
 					},
 					pf.RunDyUserList,
 				}, {
