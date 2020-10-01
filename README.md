@@ -1,6 +1,10 @@
 ## goannie
 goannie 是一个视频资源采集下载的实用工具。目前它还没有 gui ，通过命令行交互的方式操作。
 
+
+## 获取方式
+https://gitee.com/rock_rabbit/goannie/releases
+
 ## 特点
 * 视频批量采集
 * 下载cookie设置
@@ -81,3 +85,10 @@ ffmpeg.exe
 
 ## 感谢
 https://github.com/iawia002/annie
+
+## 截图
+![goannie 截图](http://image.68wu.cn/blog/goannie_20201001.png)
+## 挖坑
+计划会写一个GUI版本
+
+![videoSpade 视频铲](http://image.68wu.cn/blog/videoSpade_20201001.png)
