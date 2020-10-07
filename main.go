@@ -16,8 +16,8 @@ import (
 	"github.com/garyburd/redigo/redis"
 )
 
-var goannieVersion = "v0.0.19"
-var goannieUpdateTime = "2020-10-01"
+var goannieVersion = "v0.0.20"
+var goannieUpdateTime = "2020-10-07"
 var goannieTitle = `
                                         __           
    __     ___      __      ___     ___ /\_\     __   
@@ -100,7 +100,7 @@ func init() {
 					[]*regexp.Regexp{
 						regexp.MustCompile(`^(http|https)://i\.youku\.com/i/.*?`),
 					},
-					pf.RunYkOne,
+					pf.RunYkUserlist,
 				},
 			},
 			"douyin.txt",
@@ -208,6 +208,14 @@ func init() {
 						regexp.MustCompile(`^(http|https)://www\.iqiyi\.com/v_\w+\.html.*?$`),
 					},
 					pf.RunIqyOne,
+				},
+				{
+					"userList",
+					"作者视频		https://www.iqiyi.com/u/2182689830",
+					[]*regexp.Regexp{
+						regexp.MustCompile(`^(http|https)://www\.iqiyi\.com/u/.*?`),
+					},
+					pf.RunIqyUserList,
 				},
 				{
 					"detail",
@@ -445,7 +453,7 @@ func printHello(conn redis.Conn) {
 		item.printInfo()
 		color.Set(color.FgHiBlack, color.Bold)
 		fmt.Printf("cookie 设置：在goannie.exe同级目录中新建 %s 写入name=value;name=value....格式即可。\n", item.CookieFile)
-		if item.Name == "腾讯视频" {
+		if item.Name == "优酷视频" {
 			fmt.Println("ccode 和 ckey 设置：在goannie.exe同级目录中新建 ccode.txt 和 ckey.txt 写入其中即可。")
 		}
 		color.Unset()

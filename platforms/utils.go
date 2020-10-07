@@ -1,11 +1,14 @@
 package platforms
 
 import (
+	"crypto/md5"
+	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"strings"
@@ -351,14 +354,23 @@ func RequestGet(url string, headers map[string]string) (*http.Response, error) {
 	return res, nil
 }
 
-// RequestGetJSON 请求获取json
-func RequestGetJSON(url string, headers map[string]string, v interface{}) error {
+// RequestGetHTML 请求获取HTML
+func RequestGetHTML(url string, headers map[string]string) ([]byte, error) {
 	res, err := RequestGet(url, headers)
 	if err != nil {
-		return err
+		return []byte{}, err
 	}
 	defer res.Body.Close()
 	body, err := ioutil.ReadAll(res.Body)
+	if err != nil {
+		return []byte{}, err
+	}
+	return body, nil
+}
+
+// RequestGetJSON 请求获取json
+func RequestGetJSON(url string, headers map[string]string, v interface{}) error {
+	body, err := RequestGetHTML(url, headers)
 	if err != nil {
 		return err
 	}
@@ -367,4 +379,31 @@ func RequestGetJSON(url string, headers map[string]string, v interface{}) error 
 		return err
 	}
 	return nil
+}
+
+// MapToParameters map转url参数
+func MapToParameters(parameters [][2]string) string {
+	return NewMapToParameters(parameters, true)
+}
+
+// NewMapToParameters map转url参数
+func NewMapToParameters(parameters [][2]string, isQuery bool) string {
+	retData := ""
+	for _, i := range parameters {
+		if isQuery {
+			i[1] = url.QueryEscape(i[1])
+		}
+		retData += fmt.Sprintf("%s=%s&", i[0], i[1])
+	}
+	if retData != "" {
+		return retData[:len(retData)-1]
+	}
+	return retData
+}
+
+// MD5 生成md5
+func MD5(str string) string {
+	h := md5.New()
+	h.Write([]byte(str))
+	return hex.EncodeToString(h.Sum(nil))
 }
