@@ -328,6 +328,10 @@ func PrintVideoIDCount(conn redis.Conn) {
 			"name":  "抖音视频",
 			"pt":    "douyin",
 			"count": "",
+		}, {
+			"name":  "优酷视频",
+			"pt":    "youku",
+			"count": "",
 		},
 	}
 	for idx, item := range ptList {
