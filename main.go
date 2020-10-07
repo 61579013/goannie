@@ -16,8 +16,8 @@ import (
 	"github.com/garyburd/redigo/redis"
 )
 
-var goannieVersion = "v0.0.19"
-var goannieUpdateTime = "2020-10-01"
+var goannieVersion = "v0.0.20"
+var goannieUpdateTime = "2020-10-07"
 var goannieTitle = `
                                         __           
    __     ___      __      ___     ___ /\_\     __   
@@ -187,6 +187,14 @@ func init() {
 						regexp.MustCompile(`^(http|https)://www\.iqiyi\.com/v_\w+\.html.*?$`),
 					},
 					pf.RunIqyOne,
+				},
+				{
+					"userList",
+					"作者视频		https://www.iqiyi.com/u/2182689830",
+					[]*regexp.Regexp{
+						regexp.MustCompile(`^(http|https)://www\.iqiyi\.com/u/.*?`),
+					},
+					pf.RunIqyUserList,
 				},
 				{
 					"detail",

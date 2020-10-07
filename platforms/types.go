@@ -354,6 +354,35 @@ type IqiyiPlayPageInfo struct {
 	Cid     string
 }
 
+// IqiyGetVideosAction 爱奇艺作品列表api
+type IqiyGetVideosAction struct {
+	Code string `json:"code"`
+	Data struct {
+		HasMore  int `json:"hasMore"`
+		TotalNum int `json:"totalNum"`
+		Sort     struct {
+			ReprentativeWork interface{} `json:"reprentativeWork"`
+			Flows            []struct {
+				QipuID int64 `json:"qipuId"`
+			} `json:"flows"`
+		} `json:"sort"`
+	} `json:"data"`
+	Msg interface{} `json:"msg"`
+}
+
+// IqiyEpisodeInfoAction 爱奇艺作品详情api
+type IqiyEpisodeInfoAction struct {
+	Code string `json:"code"`
+	Data map[string]struct {
+		QipuID   int    `json:qipuId`
+		Title    string `json:title`
+		PageUrl  string `json:pageUrl`
+		Nickname string `json:nickname`
+		VID      string `json:vid`
+	} `json:"data"`
+	Msg interface{} `json:"msg"`
+}
+
 // XiguaInfo 西瓜视频信息API
 type XiguaInfo struct {
 	Ck struct {

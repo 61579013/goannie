@@ -7,33 +7,8 @@ import (
 	"gitee.com/rock_rabbit/goannie/platforms"
 )
 
-func TestDouyin(t *testing.T) {
-	// page, count, err := platforms.DyGetUserListPage("MS4wLjABAAAArrTGJuyQzorGDmgxrRBGNme7R87ahhFijRqxR_6Ubf29Gj0j34n1YuS6DZXbYGfa")
-	// if err != nil {
-	// 	fmt.Println(err)
-	// }
-	// fmt.Println(page, count)
-
-	maxCursor := 0
-	videoCount := 0
-	for {
-		res, err := platforms.DyGetUserlistAPI("MS4wLjABAAAArrTGJuyQzorGDmgxrRBGNme7R87ahhFijRqxR_6Ubf29Gj0j34n1YuS6DZXbYGfa", maxCursor, 0)
-		if err != nil {
-			fmt.Println(err)
-			break
-		}
-		if res.HasMore == 0 {
-			break
-		}
-		maxCursor = res.MaxCursor
-		p := 0
-		for _, _ = range res.AwemeList {
-			p++
-			videoCount++
-		}
-		fmt.Printf("\r数量：%d 频率：%d", videoCount, p)
-	}
-	fmt.Println("\n数量：", videoCount)
+func TestT(t *testing.T) {
+	fmt.Println(platforms.IqyEpisodeInfoActionSign("1840669808567100,8520304822361500,7941943246174600,7639526721577300,8951067882572700,1129148701644200,2568234232413900,1755640228695100,3939937831980600,2709415421617900,7379624986917800,2660483304892700,4628998295137100,7340318860362600,4034593401988400,8643838362869700,7098064774349400,6527724856636800,8578060763344900,1971422841687300,2516895618124700,8643036197004800,1291186202831000,7336308031100500,4147698786490200,1940138373612400,1041712624190800,3282964002660100", "1602042681266"))
 }
 
 // func TestDouyinSignature(t *testing.T) {
