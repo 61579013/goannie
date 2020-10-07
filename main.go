@@ -85,6 +85,27 @@ func init() {
 	// 初始化支持平台
 	platformList = []Platform{
 		{
+			"优酷视频",
+			[]URLRegexp{
+				{
+					"one",
+					"单视频		https://v.youku.com/v_show/id_XNDg2MTM3MjMyMA==.html",
+					[]*regexp.Regexp{
+						regexp.MustCompile(`^(http|https)://v\.youku\.com/v_show/.*?\.html`),
+					},
+					pf.RunYkOne,
+				}, {
+					"userList",
+					"作者视频		http://i.youku.com/i/UNjMwMTY2MDUyMA==",
+					[]*regexp.Regexp{
+						regexp.MustCompile(`^(http|https)://i\.youku\.com/i/.*?`),
+					},
+					pf.RunYkOne,
+				},
+			},
+			"douyin.txt",
+			"",
+		}, {
 			"抖音视频",
 			[]URLRegexp{
 				{
