@@ -383,6 +383,21 @@ type IqiyEpisodeInfoAction struct {
 	Msg interface{} `json:"msg"`
 }
 
+// IqiyPaoPaoInfoApi 爱奇艺剧集信息api
+type IqiyPaoPaoInfoApi struct {
+	Code string `json:"code"`
+	Data struct {
+		Epsodelist []struct {
+			TvID     int    `json:tvId`
+			VID      string `json:vid`
+			Name     string `json:name`
+			SubTitle string `json:subtitle`
+			PlayURL  string `json:playUrl`
+		} `json:epsodelist`
+		Total int `json:total`
+	} `json:"data"`
+}
+
 // XiguaInfo 西瓜视频信息API
 type XiguaInfo struct {
 	Ck struct {

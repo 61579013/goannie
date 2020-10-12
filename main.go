@@ -16,8 +16,8 @@ import (
 	"github.com/garyburd/redigo/redis"
 )
 
-var goannieVersion = "v0.0.20"
-var goannieUpdateTime = "2020-10-07"
+var goannieVersion = "v0.0.21"
+var goannieUpdateTime = "2020-10-13"
 var goannieTitle = `
                                         __           
    __     ___      __      ___     ___ /\_\     __   

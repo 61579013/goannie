@@ -284,6 +284,138 @@ func IqyEpisodeInfoActionSign(qipuIds, timestamp string) string {
 
 // RunIqyDetail 爱奇艺归档页：https://www.iqiyi.com/a_19rrht2ok5.html
 func RunIqyDetail(runType RunType, arg map[string]string) error {
+	var err error
+	branch := IqyDetailBranch(runType.URL)
+	switch branch {
+	case "archive":
+		if err = IqyArchive(runType); err != nil {
+			return err
+		}
+	case "episodes":
+		if err = IqyEpisodes(runType); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+// IqyDetailBranch 剧集页有多种
+// archive  归档 https://www.iqiyi.com/a_19rrht2ok5.html
+// episodes 剧集 https://www.iqiyi.com/a_19rrh9f0tx.html
+func IqyDetailBranch(url string) string {
+	var err error
+	// 获取aid
+	aid := IqyGetAID(url)
+	resData, err := IqyAvlistInfo(aid, "1")
+	if err != nil {
+		return "archive"
+	}
+	if len(resData.Data.Epsodelist) == 0 {
+		return "archive"
+	}
+	return "episodes"
+}
+
+// IqyGetAID 获取aid
+func IqyGetAID(url string) string {
+	var err error
+	resData, err := RequestGetHTML(url, map[string]string{
+		"accept":     "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+		"user-agent": UserAgentPc,
+	})
+	if err != nil {
+		return ""
+	}
+	getExp := regexp.MustCompile(`albumId: "(\d+)",`).FindStringSubmatch(string(resData))
+	if len(getExp) < 2 {
+		return ""
+	}
+	return getExp[1]
+}
+
+// IqyEpisodes 剧集 https://www.iqiyi.com/a_19rrh9f0tx.html
+func IqyEpisodes(runType RunType) error {
+	aid := IqyGetAID(runType.URL)
+	page, count, err := IqyGetEpisodesMaxPage(aid)
+	if err != nil {
+		return err
+	}
+	PrintInfo("爱奇艺剧集：按集数分页，1-50是第一页，51-100是第二页.....")
+	PrintInfo(fmt.Sprintf("\r总页数：%d  每页个数：%d  总个数：%d", page, 50, count))
+	var (
+		start, end string
+	)
+	if err = GetCmdDataString("请输入起始页", &start); err != nil {
+		return err
+	}
+	startInt, err := strconv.Atoi(start)
+	if err != nil || startInt > page || startInt <= 0 {
+		return errors.New("起始页格式错误")
+	}
+	if err = GetCmdDataString("请输入结束页", &end); err != nil {
+		return err
+	}
+	endInt, err := strconv.Atoi(end)
+	if err != nil || endInt > page || endInt < startInt || endInt <= 0 {
+		return errors.New("结束页格式错误")
+	}
+	var downLoadList []map[string]string
+	screenName := "--"
+	startTime := time.Now().Unix()
+	errorMsg := "--"
+	errorCount := 0
+	for {
+		if startInt > endInt {
+			break
+		}
+		resData, err := IqyAvlistInfo(aid, fmt.Sprint(startInt))
+		if err != nil {
+			errorCount++
+			errorMsg = err.Error()
+			continue
+		}
+		for _, item := range resData.Data.Epsodelist {
+			isVID := IsVideoID("iqiyi", fmt.Sprint(item.VID), runType.RedisConn)
+			if isVID && runType.IsDeWeight {
+				continue
+			}
+			downLoadList = append(downLoadList, map[string]string{
+				"vid":   fmt.Sprint(item.VID),
+				"title": item.Name,
+				"url":   item.PlayURL,
+			})
+			screenName = item.SubTitle
+		}
+		PrintInfof(fmt.Sprintf(
+			"\rcurrent: %d gather: %d subtitle: %s duration: %ds",
+			startInt, len(downLoadList), screenName, (time.Now().Unix() - startTime),
+		))
+		if errorMsg != "--" {
+			color.Set(color.FgRed, color.Bold)
+			fmt.Printf(" errCout：%d errMsg：%s", errorCount, errorMsg)
+			color.Unset()
+		}
+		startInt++
+	}
+	fmt.Println("")
+	PrintInfo(fmt.Sprintf("采集到 %d 个视频", len(downLoadList)))
+	AnnieDownloadAll(downLoadList, runType, "iqiyi")
+	PrintInfo("全部下载完成")
+	return nil
+}
+
+// IqyGetEpisodesMaxPage 获取剧集页数
+func IqyGetEpisodesMaxPage(aid string) (int, int, error) {
+	resData, err := IqyAvlistInfo(aid, "1")
+	if err != nil {
+		return 0, 0, err
+	}
+	return int(math.Ceil(float64(resData.Data.Total) / 50)), resData.Data.Total, nil
+}
+
+// IqyArchive 归档 https://www.iqiyi.com/a_19rrht2ok5.html
+func IqyArchive(runType RunType) error {
+	PrintInfo("爱奇艺归档：按年份分类，输入起始年份 和 结束年份。")
 	var (
 		start, end string
 	)
@@ -352,6 +484,20 @@ func RunIqyDetail(runType RunType, arg map[string]string) error {
 
 	PrintInfo("全部下载完成")
 	return nil
+}
+
+// IqyAvlistInfo 剧集
+func IqyAvlistInfo(aid, page string) (*IqiyPaoPaoInfoApi, error) {
+	api := "https://pcw-api.iqiyi.com/albums/album/avlistinfo?aid=%s&size=50&page=%s"
+	var jsonData IqiyPaoPaoInfoApi
+	if err := RequestGetJSON(fmt.Sprintf(api, aid, page), map[string]string{
+		"accept":     "*/*",
+		"referer":    "https://www.iqiyi.com/",
+		"user-agent": UserAgentPc,
+	}, &jsonData); err != nil {
+		return nil, err
+	}
+	return &jsonData, nil
 }
 
 // DetailGetSvlistinfo 爱奇艺归档请求API

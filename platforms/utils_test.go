@@ -8,13 +8,7 @@ import (
 )
 
 func TestT(t *testing.T) {
-	fmt.Println(platforms.YkGetUID("http://i.youku.com/u/UNzA0Nzk1Njg3Mg==?spm=a2h0c.8166622.PhoneSokuUgc_13.3"))
-	fmt.Println(platforms.YkGetUID("http://i.youku.com/u/UNzA0Nzk1Njg3Mg==/?"))
-	fmt.Println(platforms.YkGetUID("http://i.youku.com/u/UNzA0Nzk1Njg3Mg=="))
-	fmt.Println(platforms.YkGetUID("http://i.youku.com/i/UNzA0Nzk1Njg3Mg==?spm=a2h0c.8166622.PhoneSokuUgc_13.3"))
-	fmt.Println(platforms.YkGetUID("http://i.youku.com/i/UNzA0Nzk1Njg3Mg==/?"))
-	fmt.Println(platforms.YkGetUID("http://i.youku.com/i/UNzA0Nzk1Njg3Mg=="))
-	fmt.Println(platforms.YkGetUID("https://i.youku.com/yijialianmeng?spm=a2hzp.8244740.0.0"))
+	fmt.Println(platforms.IqyGetAID("https://www.iqiyi.com/a_19rrh9f0tx.html"))
 }
 
 // func TestDouyin(t *testing.T) {
