@@ -1,14 +1,18 @@
 package platforms_test
 
 import (
-	"fmt"
 	"testing"
 
 	"gitee.com/rock_rabbit/goannie/platforms"
 )
 
 func TestT(t *testing.T) {
-	fmt.Println(platforms.IqyGetAID("https://www.iqiyi.com/a_19rrh9f0tx.html"))
+	err := platforms.RunTxDetailTow(platforms.RunType{
+		URL: "https://v.qq.com/detail/6/6qwt97k9auzlv48.html",
+	}, nil)
+	if err != nil {
+		t.Log(err)
+	}
 }
 
 // func TestDouyin(t *testing.T) {

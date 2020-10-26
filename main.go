@@ -16,8 +16,8 @@ import (
 	"github.com/garyburd/redigo/redis"
 )
 
-var goannieVersion = "v0.0.21"
-var goannieUpdateTime = "2020-10-13"
+var goannieVersion = "v0.0.22"
+var goannieUpdateTime = "2020-10-26"
 var goannieTitle = `
                                         __           
    __     ___      __      ___     ___ /\_\     __   
@@ -148,12 +148,20 @@ func init() {
 					pf.RunTxOne,
 				},
 				{
-					"detail",
+					"detail1",
 					"腾讯剧集页	https://v.qq.com/detail/5/52852.html",
 					[]*regexp.Regexp{
 						regexp.MustCompile(`^(http|https)://v\.qq\.com/detail/\d+/\d+\.html.*?$`),
 					},
 					pf.RunTxDetail,
+				},
+				{
+					"detail2",
+					"腾讯剧集页	https://v.qq.com/detail/q/q6py1ah4vcx7mt5.html",
+					[]*regexp.Regexp{
+						regexp.MustCompile(`^(http|https)://v\.qq\.com/detail/\w+/.*?\.html.*?$`),
+					},
+					pf.RunTxDetailTow,
 				}, {
 					"userList",
 					"作者视频		https://v.qq.com/s/videoplus/1790091432",
@@ -271,14 +279,14 @@ func init() {
 					"one",
 					"单视频		https://haokan.baidu.com/v?vid=3881011031260239591",
 					[]*regexp.Regexp{
-						regexp.MustCompile(`^(http|https)://haokan\.baidu\.com/v\?vid=\d+.*?$`),
+						regexp.MustCompile(`(http|https)://haokan\.baidu\.com/v\?vid=\d+`),
 					},
 					pf.RunHkOne,
 				}, {
 					"userList",
 					"作者视频		https://haokan.baidu.com/author/1649278643844524",
 					[]*regexp.Regexp{
-						regexp.MustCompile(`^(http|https)://haokan\.baidu\.com/author/\d+.*?$`),
+						regexp.MustCompile(`(http|https)://haokan\.baidu\.com/author/\d+`),
 					},
 					pf.RunHkUserList,
 				},

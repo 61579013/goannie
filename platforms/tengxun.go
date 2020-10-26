@@ -54,6 +54,56 @@ func TxGetVID(url string) string {
 	return ""
 }
 
+// RunTxDetailTow 腾讯归档页 改版后
+func RunTxDetailTow(runType RunType, arg map[string]string) error {
+	urls, err := TxGetDetailTowURLS(runType.URL)
+	if err != nil {
+		return err
+	}
+	var downLoadList []map[string]string
+	for _, url := range urls {
+		vid := TxGetVID(url)
+		isVID := IsVideoID("tengxun", vid, runType.RedisConn)
+		if isVID && runType.IsDeWeight {
+			continue
+		}
+		downLoadList = append(downLoadList, map[string]string{
+			"vid":   vid,
+			"title": "",
+			"url":   url,
+		})
+	}
+	PrintInfo(fmt.Sprintf("采集到 %d 个视频", len(downLoadList)))
+
+	AnnieDownloadAll(downLoadList, runType, "tengxun")
+	PrintInfo("全部下载完成")
+	return nil
+}
+
+// TxGetDetailTowURLS 获取剧集链接
+func TxGetDetailTowURLS(url string) ([]string, error) {
+	content, err := RequestGetHTML(url, map[string]string{
+		"referer":    "https://v.qq.com/",
+		"user-agent": UserAgentPc,
+	})
+	if err != nil {
+		return nil, err
+	}
+	pageStr := regexp.MustCompile(`mod_row_episode((.|\n)*?)<div r-component`).FindStringSubmatch(string(content))
+	if len(pageStr) < 2 {
+		return nil, errors.New("获取集数失败")
+	}
+	urls := regexp.MustCompile(`<a href="(https://v\.qq\.com/x/cover/.*?/.*?\.html)"`).FindAllStringSubmatch(pageStr[1], -1)
+	var resData []string
+	for _, i := range urls {
+		if len(i) < 2 {
+			continue
+		}
+		resData = append(resData, i[1])
+	}
+	return resData, nil
+}
+
 // RunTxDetail 腾讯归档页：https://v.qq.com/detail/5/52852.html
 func RunTxDetail(runType RunType, arg map[string]string) error {
 	var (

@@ -80,7 +80,7 @@ func RunDyUserList(runType RunType, arg map[string]string) error {
 	maxCursor := 0
 	videoCount := 0
 	for {
-		if videoCount > endInt {
+		if videoCount >= endInt {
 			break
 		}
 		PrintInfof(fmt.Sprintf(
@@ -91,10 +91,6 @@ func RunDyUserList(runType RunType, arg map[string]string) error {
 		if err != nil {
 			break
 		}
-		if res.HasMore == 0 {
-			break
-		}
-		maxCursor = res.MaxCursor
 		for _, item := range res.AwemeList {
 			videoCount++
 			VID := item.AwemeID
@@ -108,6 +104,10 @@ func RunDyUserList(runType RunType, arg map[string]string) error {
 				"url":   item.ShareURL,
 			})
 		}
+		if res.HasMore == 0 {
+			break
+		}
+		maxCursor = res.MaxCursor
 	}
 	fmt.Println("")
 	PrintInfo(fmt.Sprintf("采集到 %d 个视频", len(downLoadList)))
@@ -152,13 +152,12 @@ func DyGetSecUID(url string) (string, error) {
 
 // DyGetUserlistAPI 请求抖音作者
 func DyGetUserlistAPI(secUserID string, maxCursor, errCount int) (*DouyinVideoList, error) {
-	api := "https://api3-core-c-lf.amemv.com/aweme/v1/aweme/post/?source=0&publish_video_strategy_type=2&max_cursor=%d&sec_user_id=%s&count=20&ts=%d&_rticket=%s&"
+	api := "https://api3-core-c-lf.amemv.com/aweme/v1/aweme/post/?source=0&publish_video_strategy_type=2&max_cursor=%d&sec_user_id=%s&count=10&ts=%d&_rticket=%s&"
 	ts := time.Now().Unix()
 	rticket := fmt.Sprintf("%d", time.Now().UnixNano())[:13]
 
 	var jsonData DouyinVideoList
 	if err := RequestGetJSON(fmt.Sprintf(api, maxCursor, secUserID, ts, rticket), map[string]string{
-		"Host":            "api3-core-c-lf.amemv.com",
 		"Connection":      "keep-alive",
 		"X-SS-REQ-TICKET": fmt.Sprintf("%d", time.Now().UnixNano())[:13],
 		"sdk-version":     "1",

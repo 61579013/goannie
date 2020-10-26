@@ -38,7 +38,7 @@ func RunHkOne(runType RunType, arg map[string]string) error {
 // hkGetVID 通过url获取vid
 func hkGetVID(url string) string {
 	regexps := []*regexp.Regexp{
-		regexp.MustCompile(`^(http|https)://haokan\.baidu\.com/v\?vid=(\d+)($|\?.*?$)`),
+		regexp.MustCompile(`(http|https)://haokan\.baidu\.com/v\?vid=(\d+)`),
 	}
 	for _, regxp := range regexps {
 		resVID := regxp.FindStringSubmatch(url)
