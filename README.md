@@ -9,6 +9,7 @@ https://gitee.com/rock_rabbit/goannie/releases
 * 视频批量采集
 * 下载cookie设置
 * 重复下载过滤
+* 0.0.23 版本 支持txt文件URL提取并批量下载 
 
 ## 应用
 * 自媒体视频制作者
