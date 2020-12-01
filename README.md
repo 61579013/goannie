@@ -10,6 +10,7 @@ https://gitee.com/rock_rabbit/goannie/releases
 * 下载cookie设置
 * 重复下载过滤
 * 0.0.23 版本 支持txt文件URL提取并批量下载 
+* 没有设置cookie时，自动获取 谷歌浏览器 或者 Edge浏览器 中的cookie，注意：登录完账号信息需要关闭浏览器
 
 ## 应用
 * 自媒体视频制作者
