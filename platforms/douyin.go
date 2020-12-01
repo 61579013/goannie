@@ -221,6 +221,12 @@ func RunDyOne(runType RunType, arg map[string]string) error {
 			return nil
 		}
 	}
+	// 判断标题
+	if VideoInfo.Title == "" {
+		VideoInfo.Title = fmt.Sprintf("%d", time.Now().UnixNano())
+	} else {
+		VideoInfo.Title = fmt.Sprintf("%s_%d", VideoInfo.Title, time.Now().UnixNano())
+	}
 	downloadURL, err := DyGetDownloadURL(VideoInfo.URI, VideoInfo.Ratio)
 	if err != nil {
 		return err

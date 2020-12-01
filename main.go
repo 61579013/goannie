@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -16,8 +17,8 @@ import (
 	"github.com/garyburd/redigo/redis"
 )
 
-var goannieVersion = "v0.0.22"
-var goannieUpdateTime = "2020-10-26"
+var goannieVersion = "v0.0.23"
+var goannieUpdateTime = "2020-11-28"
 var goannieTitle = `
                                         __           
    __     ___      __      ___     ___ /\_\     __   
@@ -148,20 +149,12 @@ func init() {
 					pf.RunTxOne,
 				},
 				{
-					"detail1",
+					"detail",
 					"腾讯剧集页	https://v.qq.com/detail/5/52852.html",
 					[]*regexp.Regexp{
-						regexp.MustCompile(`^(http|https)://v\.qq\.com/detail/\d+/\d+\.html.*?$`),
+						regexp.MustCompile(`^(http|https)://v\.qq\.com/detail/.*?/.*?\.html.*?$`),
 					},
 					pf.RunTxDetail,
-				},
-				{
-					"detail2",
-					"腾讯剧集页	https://v.qq.com/detail/q/q6py1ah4vcx7mt5.html",
-					[]*regexp.Regexp{
-						regexp.MustCompile(`^(http|https)://v\.qq\.com/detail/\w+/.*?\.html.*?$`),
-					},
-					pf.RunTxDetailTow,
 				}, {
 					"userList",
 					"作者视频		https://v.qq.com/s/videoplus/1790091432",
@@ -382,6 +375,50 @@ GETURL:
 		printErrInfo(err.Error())
 		goto GETURL
 	}
+
+	// 首先判断是否txt文件
+	if filepath.Ext(url) == ".txt" {
+		f, err := os.Open(url)
+		if err != nil {
+			printErrInfo(err.Error())
+			goto GETURL
+		}
+		data, err := ioutil.ReadAll(f)
+		f.Close()
+		if err != nil {
+			printErrInfo(err.Error())
+			goto GETURL
+		}
+		matched := regexp.MustCompile("(?s)(http|https):\\/\\/([\\w\\-]+(\\.[\\w\\-]+)*\\/)*[\\w\\-]+(\\.[\\w\\-]+)*\\/?(\\?([\\w\\-\\.,@?^=%&:\\/~\\+#]*)+)?")
+		urlList := matched.FindAllString(string(data), -1)
+		pf.PrintInfo(fmt.Sprintf("读取到 %d 个URL", len(urlList)))
+		for _, item := range urlList {
+			url := item
+			platform, subtask, err := getURLPlatform(url)
+			if err != nil {
+				continue
+			}
+			color.Set(color.FgBlue, color.Bold)
+			fmt.Printf("平台：%s  子任务：%s\n", platform.Name, subtask.Name)
+			color.Unset()
+			currenpath, _ := getCurrentPath()
+			runType := pf.RunType{
+				URL:           url,
+				SavePath:      savePath,
+				CookieFile:    fmt.Sprintf("%s%s", currenpath, platform.CookieFile),
+				DefaultCookie: platform.DefaultCookie,
+				IsDeWeight:    isDeWeightBool,
+				RedisConn:     conn,
+			}
+			err = subtask.Run(runType, map[string]string{})
+			if err != nil {
+				printErrInfo(err.Error())
+				continue
+			}
+		}
+		goto GETURL
+	}
+
 	platform, subtask, err := getURLPlatform(url)
 	if err != nil {
 		// 尝试直接使用 annie

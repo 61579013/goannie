@@ -106,6 +106,29 @@ func TxGetDetailTowURLS(url string) ([]string, error) {
 
 // RunTxDetail 腾讯归档页：https://v.qq.com/detail/5/52852.html
 func RunTxDetail(runType RunType, arg map[string]string) error {
+	data, err := RequestGetHTML(runType.URL, map[string]string{
+		"accept":     "*/*",
+		"referer":    "https://v.qq.com/",
+		"user-agent": UserAgentPc,
+	})
+	if err != nil {
+		return err
+	}
+	props := regexp.MustCompile(`(?s)r-component="p-index" r-props=".*?displayType: (\d+).*?" itemscope="`).FindStringSubmatch(string(data))
+	if len(props) < 2 {
+		return errors.New("基础信息解析失败")
+	}
+	displayType := props[1]
+
+	if displayType == "8" {
+		return TxDetailOne(runType)
+	}
+
+	return TxDetailTow(runType)
+}
+
+// TxDetailOne 腾讯剧集页第一种 https://v.qq.com/detail/8/87895.html
+func TxDetailOne(runType RunType) error {
 	var (
 		start, end string
 	)
@@ -145,22 +168,19 @@ func RunTxDetail(runType RunType, arg map[string]string) error {
 		return errors.New("格式错误")
 	}
 	var apiList []string
-	var id int
+	var id string
 
-	resGetID := regexp.MustCompile(`^(http|https)://v\.qq\.com/detail/\d+/(\d+)\.html$`).FindStringSubmatch(runType.URL)
+	resGetID := regexp.MustCompile(`^(http|https)://v\.qq\.com/detail/.*?/(.*?)\.html$`).FindStringSubmatch(runType.URL)
 	if len(resGetID) < 3 {
 		return errors.New("获取ID失败")
 	}
-	if id, err = strconv.Atoi(resGetID[2]); err != nil {
-		return errors.New("获取ID失败")
-	}
-
+	id = resGetID[2]
 	for {
 		if startYear > endYear || (startYear == endYear && startMonth > endMonth) {
 			break
 		}
 		api := fmt.Sprintf(
-			"https://s.video.qq.com/get_playsource?id=%d&plat=2&type=4&data_type=3&video_type=5&year=%d&month=%d&plname=qq&otype=json&_t=%d",
+			"https://s.video.qq.com/get_playsource?id=%s&plat=2&type=4&data_type=3&video_type=5&year=%d&month=%d&plname=qq&otype=json&_t=%d",
 			id, startYear, startMonth, time.Now().Unix()*1000,
 		)
 		apiList = append(apiList, api)
@@ -193,6 +213,58 @@ func RunTxDetail(runType RunType, arg map[string]string) error {
 	}
 	PrintInfo(fmt.Sprintf("采集到 %d 个视频", len(downLoadList)))
 
+	AnnieDownloadAll(downLoadList, runType, "tengxun")
+
+	PrintInfo("全部下载完成")
+	return nil
+}
+
+// TxDetailTow 腾讯剧集页第二种 https://v.qq.com/detail/m/m441e3rjq9kwpsc.html
+func TxDetailTow(runType RunType) error {
+	var id string
+	resGetID := regexp.MustCompile(`^(http|https)://v\.qq\.com/detail/.*?/(.*?)\.html$`).FindStringSubmatch(runType.URL)
+	if len(resGetID) < 3 {
+		return errors.New("获取ID失败")
+	}
+	id = resGetID[2]
+	jsonData, err := txGetPlaysource(id)
+	if err != nil {
+		return err
+	}
+	videoCount := len(jsonData.PlaylistItem.VideoPlayList)
+	PrintInfo(fmt.Sprintf("\r总个数：%d ", videoCount))
+
+	var (
+		start, end string
+	)
+	if err = GetCmdDataString("请输入起始数", &start); err != nil {
+		return err
+	}
+	startInt, err := strconv.Atoi(start)
+	if err != nil || startInt > videoCount || startInt <= 0 {
+		return errors.New("起始数格式错误")
+	}
+	if err = GetCmdDataString("请输入结束数", &end); err != nil {
+		return err
+	}
+	endInt, err := strconv.Atoi(end)
+	if err != nil || endInt > videoCount || endInt < startInt || endInt <= 0 {
+		return errors.New("结束数格式错误")
+	}
+	var downLoadList []map[string]string
+	for {
+		if startInt > endInt {
+			break
+		}
+		item := jsonData.PlaylistItem.VideoPlayList[startInt-1]
+		downLoadList = append(downLoadList, map[string]string{
+			"vid":   item.ID,
+			"title": item.Title,
+			"url":   fmt.Sprintf("https://v.qq.com/x/page/%s.html", item.ID),
+		})
+		startInt++
+	}
+	PrintInfo(fmt.Sprintf("采集到 %d 个视频", len(downLoadList)))
 	AnnieDownloadAll(downLoadList, runType, "tengxun")
 
 	PrintInfo("全部下载完成")
@@ -351,6 +423,32 @@ func txGetVuid(url string) (string, error) {
 		return resVuid[2], nil
 	}
 	return "", errors.New("获取Vuid失败")
+}
+
+// txGetPlaysource 获取视频播放列表
+func txGetPlaysource(id string) (*TxGetPlaysource, error) {
+	api := fmt.Sprintf("https://s.video.qq.com/get_playsource?id=%s&data_type=2&type=4&range=1-100000&otype=json&num_mod_cnt=20&callback=Replacejsonp", id)
+	body, err := RequestGetHTML(api, map[string]string{
+		"accept":     "*/*",
+		"referer":    "https://v.qq.com/",
+		"user-agent": UserAgentPc,
+	})
+	if err != nil {
+		return nil, err
+	}
+	newBody := strings.ReplaceAll(string(body), "Replacejsonp(", "")
+	if len(newBody) > 0 {
+		newBody = newBody[:len(newBody)-1]
+	}
+	var jsonData TxGetPlaysource
+	err = json.Unmarshal([]byte(newBody), &jsonData)
+	if err != nil {
+		return nil, err
+	}
+	if jsonData.Error != 0 {
+		return nil, errors.New(jsonData.Msg)
+	}
+	return &jsonData, nil
 }
 
 // txGetVideoplusData 请求腾讯作者作品列表API

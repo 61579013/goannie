@@ -780,3 +780,34 @@ type DouyinVideoItem struct {
 		} `json:"video"`
 	} `json:"item_list"`
 }
+
+type TxGetPlaysource struct {
+	PlaylistItem struct {
+		AsyncParam    string        `json:"asyncParam"`
+		BtnList       []interface{} `json:"btnList"`
+		BtnPlayURL    string        `json:"btnPlayUrl"`
+		BtnTitle      string        `json:"btnTitle"`
+		DisplayType   int           `json:"displayType"`
+		IndexList     []string      `json:"indexList"`
+		Name          string        `json:"name"`
+		NeedAsync     bool          `json:"needAsync"`
+		PayType       int           `json:"payType"`
+		PlVideoType   int           `json:"pl_video_type"`
+		RealName      string        `json:"realName"`
+		StrIconURL    string        `json:"strIconUrl"`
+		Title         string        `json:"title"`
+		TotalEpisode  int           `json:"totalEpisode"`
+		VideoPlayList []struct {
+			EpisodeNumber string        `json:"episode_number"`
+			ID            string        `json:"id"`
+			MarkLabelList []interface{} `json:"markLabelList"`
+			PayType       int           `json:"payType"`
+			Pic           string        `json:"pic"`
+			PlayURL       string        `json:"playUrl"`
+			Title         string        `json:"title"`
+			Type          string        `json:"type"`
+		} `json:"videoPlayList"`
+	} `json:"PlaylistItem"`
+	Error int    `json:"error"`
+	Msg   string `json:"msg"`
+}
