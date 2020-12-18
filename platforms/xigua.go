@@ -1,6 +1,8 @@
 package platforms
 
 import (
+	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io/ioutil"
@@ -116,7 +118,7 @@ func RunXgUserList(runType RunType, arg map[string]string) error {
 	for _, video := range downLoadList {
 		oneRunType := runType
 		oneRunType.URL = video["url"]
-		err := RunXgOne(oneRunType, map[string]string{})
+		err := XgNewOne(oneRunType, map[string]string{})
 		if err != nil {
 			PrintErrInfo(err.Error())
 		} else {
@@ -294,6 +296,84 @@ func RunXgOne(runType RunType, arg map[string]string) error {
 		return err
 	}
 	return nil
+}
+
+// XgNewOne 新的获取单视频
+func XgNewOne(runType RunType, arg map[string]string) error {
+	data, err := xgGetSsrHydratedData(runType.URL)
+	if err != nil {
+		return err
+	}
+	downloadURL := xgGetNewDownloadUrl(data)
+	title := data.AnyVideo.GidInformation.PackerData.Video.Title
+	dlpt := &DownloadPrint{
+		"西瓜视频 ixigua.com",
+		title,
+		"video",
+		"normal",
+		"",
+		0,
+	}
+	dlpt.Init(downloadURL)
+	dlpt.Print()
+	maxConnectionPerServer := 1
+	if _, ok := arg["maxConnectionPerServer"]; ok {
+		maxConnectionPerServer, err = strconv.Atoi(arg["maxConnectionPerServer"])
+		if err != nil {
+			return err
+		}
+	}
+	err = Aria2Download(downloadURL, runType.SavePath, fmt.Sprintf("%s.mp4", title), runType.CookieFile, maxConnectionPerServer)
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func xgGetNewDownloadUrl(d *XiguaSsrHydratedData) string {
+	videoList := d.AnyVideo.GidInformation.PackerData.Video.VideoResource.Dash120Fps.DynamicVideo.DynamicVideoList
+	if len(videoList) != 0 && videoList[len(videoList)-1].MainURL != "" {
+		decoded, _ := base64.StdEncoding.DecodeString(videoList[len(videoList)-1].MainURL)
+		return string(decoded)
+	}
+	vl := d.AnyVideo.GidInformation.PackerData.Video.VideoResource.Normal.VideoList
+	var murl string
+	if vl.Video4.MainURL != "" {
+		murl = vl.Video4.MainURL
+	} else if vl.Video3.MainURL != "" {
+		murl = vl.Video3.MainURL
+	} else if vl.Video2.MainURL != "" {
+		murl = vl.Video2.MainURL
+	} else if vl.Video1.MainURL != "" {
+		murl = vl.Video1.MainURL
+	}
+	r, _ := base64.StdEncoding.DecodeString(murl)
+	return string(r)
+}
+
+func xgGetSsrHydratedData(url string) (*XiguaSsrHydratedData, error) {
+	data, err := RequestGetHTML(url, map[string]string{
+		"Connection":                "keep-alive",
+		"Accept":                    "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
+		"User-Agent":                UserAgentPc,
+		"Referer":                   "https://www.ixigua.com/",
+		"Accept-Language":           "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
+		"Cookie":                    "xiguavideopcwebid=6872983880459503118; xiguavideopcwebid.sig=B4DvNwwGGQ-hDxYcJo5FfbMEIn4; _ga=GA1.2.572711536.1600241266; MONITOR_WEB_ID=bfe0e43a-e004-400e-8040-81677a199a22; ttwid=1%7CPWHvUSGTtsxK0WUzkuq7SxJtT7L3WHRvJeSGG5WZjiw%7C1604995289%7Cec6a591ac986362929a9be173d65df8f3551269fff0694d34a5e57a33cd287eb; ixigua-a-s=1; Hm_lvt_db8ae92f7b33b6596893cdf8c004a1a2=1608261601; _gid=GA1.2.1203395873.1608261601; Hm_lpvt_db8ae92f7b33b6596893cdf8c004a1a2=1608262109",
+		"Upgrade-Insecure-Requests": "1",
+	})
+	if err != nil {
+		return nil, err
+	}
+	jsonStrFind := regexp.MustCompile(`window\._SSR_HYDRATED_DATA=(.*?)</script>`).FindSubmatch(data)
+	if len(jsonStrFind) < 2 {
+		return nil, errors.New("解析数据失败")
+	}
+	jsonStr := strings.ReplaceAll(string(jsonStrFind[1]), ":undefined", ":\"undefined\"")
+	var jsonData XiguaSsrHydratedData
+	if err := json.Unmarshal([]byte(jsonStr), &jsonData); err != nil {
+		return nil, err
+	}
+	return &jsonData, nil
 }
 
 // 通过 url 获取 ItemID

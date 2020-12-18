@@ -17,8 +17,8 @@ import (
 	"github.com/garyburd/redigo/redis"
 )
 
-var goannieVersion = "v0.0.23"
-var goannieUpdateTime = "2020-11-28"
+var goannieVersion = "v0.0.24"
+var goannieUpdateTime = "2020-12-18"
 var goannieTitle = `
                                         __           
    __     ___      __      ___     ___ /\_\     __   
@@ -243,7 +243,7 @@ func init() {
 						regexp.MustCompile(`^(http|https)://www\.ixigua\.com/.*?\?id=\d+.*?$`),
 						regexp.MustCompile(`^(http|https)://toutiao\.com/group/\d+/.*?$`),
 					},
-					pf.RunXgOne,
+					pf.XgNewOne,
 				}, {
 					"userList",
 					"TA的视频		https://www.ixigua.com/home/85383446500/video/",
