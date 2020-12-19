@@ -35,10 +35,8 @@ func compareStrVer(verA, verB string) int {
 // 比较版本号字符串数组
 func compareArrStrVers(verA, verB []string) int {
 
-	for index, _ := range verA {
-
+	for index := range verA {
 		littleResult := compareLittleVer(verA[index], verB[index])
-
 		if littleResult != VersionEqual {
 			return littleResult
 		}
@@ -73,7 +71,7 @@ func compareLittleVer(verA, verB string) int {
 // 按byte位进行比较小版本号
 func compareByBytes(verA, verB []byte) int {
 
-	for index, _ := range verA {
+	for index := range verA {
 		if verA[index] > verB[index] {
 			return VersionBig
 		}

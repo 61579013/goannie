@@ -6,11 +6,13 @@ import (
 	"io/ioutil"
 	"net/http"
 	"os"
+	"path/filepath"
 	"strconv"
 	"time"
 
-	"gitee.com/rock_rabbit/goannie/godler"
-	pf "gitee.com/rock_rabbit/goannie/platforms"
+	"gitee.com/rock_rabbit/goannie/config"
+	"gitee.com/rock_rabbit/goannie/downloader"
+	"gitee.com/rock_rabbit/goannie/utils"
 )
 
 /* updateBinary.go
@@ -64,10 +66,10 @@ func (vj *VersionJSON) Init() {
 var UpdateNetworkJSONFile = "http://image.68wu.cn/goannie/binary_version.json"
 
 // UpdateLocalJSONFile 更新文件本地地址
-var UpdateLocalJSONFile = fmt.Sprintf("%s\\binary_version.json", pf.AppBinPath)
+var UpdateLocalJSONFile = fmt.Sprintf("%s\\binary_version.json", config.AppBinPath)
 
 // UpdateLockFile 更新锁文件地址
-var UpdateLockFile = fmt.Sprintf("%s\\update.lock", pf.AppBinPath)
+var UpdateLockFile = fmt.Sprintf("%s\\update.lock", config.AppBinPath)
 
 // UpdateLockTimeOut 更新锁超时时间
 const UpdateLockTimeOut = 150
@@ -202,8 +204,8 @@ func UpdateLock() error {
 	// 删除文件
 	_ = os.Remove(UpdateLockFile)
 	// 检查文件夹
-	dir := pf.AppBinPath
-	isexist, err := pf.IsExist(dir)
+	dir := config.AppBinPath
+	isexist, err := utils.IsExist(dir)
 	if err != nil {
 		return err
 	}
@@ -270,8 +272,8 @@ func ExecUpdate(vj *VersionJSON) error {
 	// Annie
 	if vj.Annie.Version != "" && vj.Annie.FileURL != "" {
 		// 执行
-		pf.PrintInfo(fmt.Sprintf("检查到需要更新 annie version:%s 启动下载", vj.Annie.Version))
-		if err = DownloadFile(vj.Annie.FileURL, pf.AnnieFile); err != nil {
+		utils.Infof("检查到需要更新 annie version:%s 启动下载\n", vj.Annie.Version)
+		if err = DownloadFile(vj.Annie.FileURL, config.AnnieFile); err != nil {
 			return err
 		}
 		// 更新文件
@@ -291,8 +293,8 @@ func ExecUpdate(vj *VersionJSON) error {
 	// ffmpeg
 	if vj.Ffmpeg.Version != "" && vj.Ffmpeg.FileURL != "" {
 		// 执行
-		pf.PrintInfo(fmt.Sprintf("检查到需要更新 ffmpeg version:%s 启动下载", vj.Ffmpeg.Version))
-		if err = DownloadFile(vj.Ffmpeg.FileURL, pf.FfmpegFile); err != nil {
+		utils.Infof("检查到需要更新 ffmpeg version:%s 启动下载\n", vj.Ffmpeg.Version)
+		if err = DownloadFile(vj.Ffmpeg.FileURL, config.FfmpegFile); err != nil {
 			return err
 		}
 		// 更新文件
@@ -312,8 +314,8 @@ func ExecUpdate(vj *VersionJSON) error {
 	// aria2
 	if vj.Aria2.Version != "" && vj.Aria2.FileURL != "" {
 		// 执行
-		pf.PrintInfo(fmt.Sprintf("检查到需要更新 aria2 version:%s 启动下载", vj.Aria2.Version))
-		if err = DownloadFile(vj.Aria2.FileURL, pf.Aria2File); err != nil {
+		utils.Infof("检查到需要更新 aria2 version:%s 启动下载\n", vj.Aria2.Version)
+		if err = DownloadFile(vj.Aria2.FileURL, config.Aria2File); err != nil {
 			return err
 		}
 		// 更新文件
@@ -333,8 +335,8 @@ func ExecUpdate(vj *VersionJSON) error {
 	// redis
 	if vj.Redis.Version != "" && vj.Redis.FileURL != "" {
 		// 执行
-		pf.PrintInfo(fmt.Sprintf("检查到需要更新 redis version:%s 启动下载", vj.Redis.Version))
-		if err = DownloadFile(vj.Redis.FileURL, pf.RedisFile); err != nil {
+		utils.Infof("检查到需要更新 redis version:%s 启动下载\n", vj.Redis.Version)
+		if err = DownloadFile(vj.Redis.FileURL, config.RedisFile); err != nil {
 			return err
 		}
 		// 更新文件
@@ -354,8 +356,8 @@ func ExecUpdate(vj *VersionJSON) error {
 	// redisConf
 	if vj.RedisConf.Version != "" && vj.RedisConf.FileURL != "" {
 		// 执行
-		pf.PrintInfo(fmt.Sprintf("检查到需要更新 redisConf version:%s 启动下载", vj.RedisConf.Version))
-		if err = DownloadFile(vj.RedisConf.FileURL, pf.RedisConfFile); err != nil {
+		utils.Infof("检查到需要更新 redisConf version:%s 启动下载\n", vj.RedisConf.Version)
+		if err = DownloadFile(vj.RedisConf.FileURL, config.RedisConfFile); err != nil {
 			return err
 		}
 		// 更新文件
@@ -377,8 +379,8 @@ func ExecUpdate(vj *VersionJSON) error {
 // DownloadFile 文件下载，存在删除
 func DownloadFile(filURL, outPath string) error {
 	// 检查文件夹
-	dir := pf.AppBinPath
-	isexist, err := pf.IsExist(dir)
+	dir := config.AppBinPath
+	isexist, err := utils.IsExist(dir)
 	if err != nil {
 		return err
 	}
@@ -386,12 +388,8 @@ func DownloadFile(filURL, outPath string) error {
 		os.MkdirAll(dir, os.ModeDir)
 	}
 	_ = os.Remove(outPath)
-	dlerurl := godler.DlerURL{
-		URL:      filURL,
-		SavePath: outPath,
-		IsBar:    true,
-	}
-	if err = dlerurl.Download(); err != nil {
+	dir, file := filepath.Split(outPath)
+	if err = downloader.New(filURL, dir).SetOutputName(file).Run(); err != nil {
 		return err
 	}
 	return nil
