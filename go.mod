@@ -6,4 +6,5 @@ require (
 	github.com/cheggaaa/pb/v3 v3.0.5
 	github.com/fatih/color v1.10.0
 	github.com/garyburd/redigo v1.6.2
+	github.com/spf13/viper v1.7.1
 )

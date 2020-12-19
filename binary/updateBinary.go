@@ -62,17 +62,16 @@ func (vj *VersionJSON) Init() {
 	}
 }
 
-// UpdateNetworkJSONFile 更新文件网络地址
-var UpdateNetworkJSONFile = "http://image.68wu.cn/goannie/binary_version.json"
-
-// UpdateLocalJSONFile 更新文件本地地址
-var UpdateLocalJSONFile = fmt.Sprintf("%s\\binary_version.json", config.AppBinPath)
-
-// UpdateLockFile 更新锁文件地址
-var UpdateLockFile = fmt.Sprintf("%s\\update.lock", config.AppBinPath)
-
-// UpdateLockTimeOut 更新锁超时时间
-const UpdateLockTimeOut = 150
+var (
+	// UpdateNetworkJSONFile 更新文件网络地址
+	UpdateNetworkJSONFile = config.GetString("binary.UpdateNetworkJSONFile")
+	// UpdateLocalJSONFile 更新文件本地地址
+	UpdateLocalJSONFile = fmt.Sprintf("%s\\binary_version.json", config.AppBinPath)
+	// UpdateLockFile 更新锁文件地址
+	UpdateLockFile = fmt.Sprintf("%s\\update.lock", config.AppBinPath)
+	// UpdateLockTimeOut 更新锁超时时间
+	UpdateLockTimeOut = config.GetInt("binary.UpdateLockTimeOut")
+)
 
 // GetVersionJSON 获取 binary_version.json 内容
 func GetVersionJSON() (*VersionJSON, error) {

@@ -20,8 +20,10 @@ func init() {
 		utils.ExitInfo()
 	}
 	// 检查二进制文件更新
-	if err := binary.Update(); err != nil {
-		utils.ErrInfo(err.Error())
+	if config.GetBool("binary.check") {
+		if err := binary.Update(); err != nil {
+			utils.ErrInfo(err.Error())
+		}
 	}
 	// 检查Data目录
 	if isDataPath, _ := utils.IsExist(config.AppDataPath); !isDataPath {
@@ -31,15 +33,19 @@ func init() {
 		}
 	}
 	// 启动 redis
-	cmd := exec.Command("cmd", "/c", "start", "/B", "redis-server", config.RedisConfFile, "--dir", config.AppDataPath)
-	if err = cmd.Start(); err != nil {
-		utils.ErrInfo(err.Error())
+	if config.GetBool("redis.start") {
+		cmd := exec.Command("cmd", "/c", "start", "/B", "redis-server", config.RedisConfFile, "--dir", config.AppDataPath)
+		if err = cmd.Start(); err != nil {
+			utils.ErrInfo(err.Error())
+		}
 	}
 	// 连接 redis
-	CONN, err = redis.Dial("tcp", "localhost:6379")
-	if err != nil {
-		utils.ErrInfo(err.Error())
-		utils.ExitInfo()
+	if config.GetBool("redis.dial") {
+		CONN, err = redis.Dial(config.GetString("redis.network"), config.GetString("redis.address"))
+		if err != nil {
+			utils.ErrInfo(err.Error())
+			utils.ExitInfo()
+		}
 	}
 	sayHello()
 }

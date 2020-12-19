@@ -3,6 +3,10 @@ package config
 import (
 	"fmt"
 	"os"
+
+	"gitee.com/rock_rabbit/goannie/utils"
+
+	"github.com/spf13/viper"
 )
 
 const (
@@ -39,4 +43,72 @@ var (
 	RedisFile = fmt.Sprintf("%s\\redis-server.exe", AppBinPath)
 	// RedisConfFile 程序redisconf存放位置
 	RedisConfFile = fmt.Sprintf("%s\\redis.windows-service.conf", AppBinPath)
+	// Config 基本配置
+	Config *viper.Viper
 )
+
+// 初始化基本配置
+func init() {
+	// path, _ := utils.GetCurrentPath()
+	Config = viper.New()
+	// Config.AddConfigPath(path)
+	Config.AddConfigPath("./")
+	Config.SetConfigName("config")
+	Config.SetConfigType("toml")
+
+	// 设置默认参数
+	Config.SetDefault("app.checkDuplication", true)
+	Config.SetDefault("binary.check", true)
+	Config.SetDefault("binary.UpdateNetworkJSONFile", "http://image.68wu.cn/goannie/binary_version.json")
+	Config.SetDefault("binary.UpdateLockTimeOut", 150)
+	Config.SetDefault("redis.start", true)
+	Config.SetDefault("redis.dial", true)
+	Config.SetDefault("redis.network", "tcp")
+	Config.SetDefault("redis.address", "localhost:6379")
+	Config.SetDefault("outpath.p1", "./默认保存目录")
+	Config.SetDefault("outpath.p2", "")
+	Config.SetDefault("outpath.p3", "")
+	Config.SetDefault("outpath.p4", "")
+	Config.SetDefault("outpath.p5", "")
+	if err := Config.ReadInConfig(); err != nil {
+		utils.ErrInfo(err.Error())
+	}
+	if err := WriteConfig(); err != nil {
+		utils.ErrInfo(err.Error())
+	}
+}
+
+// WriteConfig 保存配置文件
+func WriteConfig() error {
+	var err error
+	if err = Config.SafeWriteConfig(); err == nil {
+		return nil
+	}
+	if _, ok := err.(viper.ConfigFileAlreadyExistsError); !ok {
+		return err
+	}
+	if err := Config.WriteConfig(); err != nil {
+		return err
+	}
+	return nil
+}
+
+// WatchConfig 重新读取配置
+func WatchConfig() {
+	Config.WatchConfig()
+}
+
+// GetString 获取String配置
+func GetString(key string) string {
+	return Config.GetString(key)
+}
+
+// GetInt 获取Int配置
+func GetInt(key string) int {
+	return Config.GetInt(key)
+}
+
+// GetBool 获取Bool配置
+func GetBool(key string) bool {
+	return Config.GetBool(key)
+}
