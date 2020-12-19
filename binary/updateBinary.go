@@ -29,10 +29,6 @@ type VersionJSON struct {
 		Version string `json:"version"`
 		FileURL string `json:"fileURL"`
 	} `json:"ffmpeg"`
-	Aria2 struct {
-		Version string `json:"version"`
-		FileURL string `json:"fileURL"`
-	} `json:"aria2"`
 	Redis struct {
 		Version string `json:"version"`
 		FileURL string `json:"fileURL"`
@@ -50,9 +46,6 @@ func (vj *VersionJSON) Init() {
 	}
 	if vj.Ffmpeg.Version == "" {
 		vj.Ffmpeg.Version = "0.0.0"
-	}
-	if vj.Aria2.Version == "" {
-		vj.Aria2.Version = "0.0.0"
 	}
 	if vj.Redis.Version == "" {
 		vj.Redis.Version = "0.0.0"
@@ -141,12 +134,6 @@ func IsUpdate() (*VersionJSON, error) {
 	if FfmpegUpdate == VersionSmall {
 		// 检查到需要更新
 		retData.Ffmpeg = networkFile.Ffmpeg
-	}
-	// aria2检查
-	Aria2Update := compareStrVer(localFile.Aria2.Version, networkFile.Aria2.Version)
-	if Aria2Update == VersionSmall {
-		// 检查到需要更新
-		retData.Aria2 = networkFile.Aria2
 	}
 	// redis检查
 	RedisUpdate := compareStrVer(localFile.Redis.Version, networkFile.Redis.Version)
@@ -298,27 +285,6 @@ func ExecUpdate(vj *VersionJSON) error {
 		}
 		// 更新文件
 		resData.Ffmpeg = vj.Ffmpeg
-		jsonData, err := json.Marshal(resData)
-		if err != nil {
-			return err
-		}
-		// 清空文件
-		f.Truncate(0)
-		// 写文件
-		if _, err := f.WriteAt(jsonData, 0); err != nil {
-			return err
-		}
-	}
-
-	// aria2
-	if vj.Aria2.Version != "" && vj.Aria2.FileURL != "" {
-		// 执行
-		utils.Infof("检查到需要更新 aria2 version:%s 启动下载\n", vj.Aria2.Version)
-		if err = DownloadFile(vj.Aria2.FileURL, config.Aria2File); err != nil {
-			return err
-		}
-		// 更新文件
-		resData.Aria2 = vj.Aria2
 		jsonData, err := json.Marshal(resData)
 		if err != nil {
 			return err
