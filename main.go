@@ -59,19 +59,24 @@ func main() {
 }
 
 func sayHello() {
-	green := color.New(color.FgGreen).PrintlnFunc()
-	magenta := color.New(color.FgMagenta).PrintfFunc()
-	hiBlue := color.New(color.FgHiBlue).PrintlnFunc()
-
-	green(config.TITLE)
-	magenta("	版本: %s	更新时间: %s\n\n", config.VERSION, config.UPDATETIME)
-	hiBlue("> 下载统计")
+	green := color.New(color.FgGreen)
+	magenta := color.New(color.FgMagenta)
+	hiBlue := color.New(color.FgHiBlue)
+	hiWhite := color.New(color.FgHiWhite)
+	green.Println(config.TITLE)
+	magenta.Printf("	版本: %s	更新时间: %s\n\n", config.VERSION, config.UPDATETIME)
+	hiBlue.Printf("%s %s%s %s%s\n", green.Sprint("$"), hiBlue.Sprint("作者昵称："), hiWhite.Sprint("rockrabbit"), hiBlue.Sprint("作者主页："), hiWhite.Sprint("https://www.68wu.com"))
+	hiBlue.Printf("%s %s%s\n", green.Sprint("$"), hiBlue.Sprint("软件主页："), hiWhite.Sprint("https://gitee.com/rock_rabbit/goannie"))
+	fmt.Println("")
+	hiBlue.Printf("……………………………… %s %s\n", hiWhite.Sprint("下载统计"), hiBlue.Sprint("………………………………"))
 	videoIDCount()
 	fmt.Println("")
 }
 
 // videoIDCount 打印过滤库个数
 func videoIDCount() {
+	hiWhite := color.New(color.FgHiWhite)
+	hiBlue := color.New(color.FgHiBlue)
 	ptList := []map[string]string{
 		{
 			"name":  "腾讯视频",
@@ -106,7 +111,7 @@ func videoIDCount() {
 	for idx, item := range ptList {
 		resInt, _ := redis.Int(CONN.Do("SCARD", item["pt"]))
 		ptList[idx]["count"] = fmt.Sprintf("%d", resInt)
-		fmt.Printf("%s：%s  ", item["name"], ptList[idx]["count"])
+		hiBlue.Printf("%s%s  ", hiBlue.Sprintf("%s：", item["name"]), hiWhite.Sprint(ptList[idx]["count"]))
 	}
 	fmt.Println("")
 }

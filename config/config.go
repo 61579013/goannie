@@ -49,13 +49,11 @@ var (
 
 // 初始化基本配置
 func init() {
-	// path, _ := utils.GetCurrentPath()
 	Config = viper.New()
-	// Config.AddConfigPath(path)
-	Config.AddConfigPath("./")
+	path, _ := utils.GetCurrentPath()
+	Config.AddConfigPath(path)
 	Config.SetConfigName("config")
 	Config.SetConfigType("toml")
-
 	// 设置默认参数
 	Config.SetDefault("app.checkDuplication", true)
 	Config.SetDefault("binary.check", true)
