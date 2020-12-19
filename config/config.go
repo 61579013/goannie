@@ -70,11 +70,15 @@ func init() {
 	Config.SetDefault("outpath.p3", "")
 	Config.SetDefault("outpath.p4", "")
 	Config.SetDefault("outpath.p5", "")
+	// 读取配置，如果不存在直接创建默认配置
 	if err := Config.ReadInConfig(); err != nil {
-		utils.ErrInfo(err.Error())
-	}
-	if err := WriteConfig(); err != nil {
-		utils.ErrInfo(err.Error())
+		if _, ok := err.(viper.ConfigFileNotFoundError); !ok {
+			utils.ErrInfo(err.Error())
+		} else {
+			if err := WriteConfig(); err != nil {
+				utils.ErrInfo(err.Error())
+			}
+		}
 	}
 }
 
