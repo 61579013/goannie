@@ -35,35 +35,37 @@ func init() {
 	if err = cmd.Start(); err != nil {
 		utils.ErrInfo(err.Error())
 	}
-}
-
-func main() {
 	// 连接 redis
-	conn, err := redis.Dial("tcp", "localhost:6379")
+	CONN, err = redis.Dial("tcp", "localhost:6379")
 	if err != nil {
 		utils.ErrInfo(err.Error())
 		utils.ExitInfo()
 	}
-	defer conn.Close()
-	// 打招呼
-	sayHello(conn)
+	sayHello()
 }
 
-func sayHello(conn redis.Conn) {
-	color.Set(color.FgGreen, color.Bold)
-	defer color.Unset()
-	fmt.Println(config.TITLE)
-	color.Set(color.FgMagenta, color.Bold)
-	fmt.Printf("	版本: %s	更新时间: %s\n\n", config.VERSION, config.UPDATETIME)
-	color.Set(color.FgHiBlue, color.Bold)
-	fmt.Println("下载统计")
-	color.Unset()
-	PrintVideoIDCount(conn)
+// CONN redis服务连接
+var CONN redis.Conn
+
+func main() {
+	defer CONN.Close()
+
+}
+
+func sayHello() {
+	green := color.New(color.FgGreen).PrintlnFunc()
+	magenta := color.New(color.FgMagenta).PrintfFunc()
+	hiBlue := color.New(color.FgHiBlue).PrintlnFunc()
+
+	green(config.TITLE)
+	magenta("	版本: %s	更新时间: %s\n\n", config.VERSION, config.UPDATETIME)
+	hiBlue("> 下载统计")
+	videoIDCount()
 	fmt.Println("")
 }
 
-// PrintVideoIDCount 打印过滤库个数
-func PrintVideoIDCount(conn redis.Conn) {
+// videoIDCount 打印过滤库个数
+func videoIDCount() {
 	ptList := []map[string]string{
 		{
 			"name":  "腾讯视频",
@@ -96,7 +98,7 @@ func PrintVideoIDCount(conn redis.Conn) {
 		},
 	}
 	for idx, item := range ptList {
-		resInt, _ := redis.Int(conn.Do("SCARD", item["pt"]))
+		resInt, _ := redis.Int(CONN.Do("SCARD", item["pt"]))
 		ptList[idx]["count"] = fmt.Sprintf("%d", resInt)
 		fmt.Printf("%s：%s  ", item["name"], ptList[idx]["count"])
 	}
