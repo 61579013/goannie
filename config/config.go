@@ -57,6 +57,7 @@ func init() {
 	// 设置默认参数
 	Config.SetDefault("app.checkDuplication", true)
 	Config.SetDefault("app.autoCreatePath", true)
+	Config.SetDefault("app.isFiltrationID", true)
 	Config.SetDefault("binary.check", true)
 	Config.SetDefault("binary.UpdateNetworkJSONFile", "http://image.68wu.cn/goannie/binary_version.json")
 	Config.SetDefault("binary.UpdateLockTimeOut", 150)

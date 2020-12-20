@@ -2,13 +2,20 @@ package main
 
 import (
 	"fmt"
+	"net/url"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 
 	"gitee.com/rock_rabbit/goannie/extractors"
+	"gitee.com/rock_rabbit/goannie/reptiles"
+	"gitee.com/rock_rabbit/goannie/storage"
 
 	"gitee.com/rock_rabbit/goannie/binary"
 	"gitee.com/rock_rabbit/goannie/config"
+	extractorsTypes "gitee.com/rock_rabbit/goannie/extractors/types"
+	reptilesTypes "gitee.com/rock_rabbit/goannie/reptiles/types"
 	"gitee.com/rock_rabbit/goannie/utils"
 	"github.com/fatih/color"
 	"github.com/garyburd/redigo/redis"
@@ -59,7 +66,7 @@ func main() {
 	defer CONN.Close()
 	var err error
 	// 创建 redis 存储器
-	// s := storage.NewRedis(CONN)
+	verify := storage.NewRedis(CONN)
 GETSAVEPATH:
 	sayPathlist()
 	var savePath string
@@ -67,7 +74,61 @@ GETSAVEPATH:
 		utils.ErrInfo(err.Error())
 		goto GETSAVEPATH
 	}
-	fmt.Println(savePath)
+GETURL:
+	var url string
+	if err = utils.GetStrInput("请输入URL或.txt", &url); err != nil {
+		utils.ErrInfo(err.Error())
+		goto GETURL
+	}
+	// 首先判断是否txt文件
+	if filepath.Ext(url) == ".txt" {
+		goto GETURL
+	}
+	cookie := getCookiepath(url)
+	reptilesData, err := reptiles.Extract(url, reptilesTypes.Options{
+		Cookie: cookie,
+		Verify: verify,
+	})
+	if err != nil {
+		utils.ErrInfo(err.Error())
+		goto GETURL
+	}
+	for _, d := range reptilesData {
+		if err = extractors.Extract(d.URL, extractorsTypes.Options{
+			Cookie:   cookie,
+			Verify:   verify,
+			SavePath: savePath,
+		}); err != nil {
+			utils.ErrInfo(err.Error())
+		}
+	}
+	goto GETURL
+}
+
+func getCookiepath(u string) string {
+	var domain string
+	u = strings.TrimSpace(u)
+	parseU, err := url.ParseRequestURI(u)
+	if err != nil {
+		return ""
+	}
+	if parseU.Host == "haokan.baidu.com" {
+		domain = "haokan"
+	} else {
+		domain = utils.Domain(parseU.Host)
+	}
+	if _, ok := extractors.ExtractorMap[domain]; !ok {
+		return ""
+	}
+	extractor := extractors.ExtractorMap[domain]
+	filename := fmt.Sprintf("%s.txt", extractor.Key())
+	currenpath, _ := utils.GetCurrentPath()
+	cookiepath := filepath.Join(currenpath, filename)
+
+	hiWhite := color.New(color.FgHiWhite)
+	hiBlue := color.New(color.FgHiBlue)
+	hiBlue.Printf("%s%s %s%s %s%s\n", hiBlue.Sprint("Name："), hiWhite.Sprint(extractor.Name()), hiBlue.Sprint("Key："), hiWhite.Sprint(extractor.Key()), hiBlue.Sprint("Cookiepath："), hiWhite.Sprint(cookiepath))
+	return cookiepath
 }
 
 func getSavepath() (string, error) {
@@ -82,8 +143,6 @@ func getSavepath() (string, error) {
 	case "p1", "p2", "p3", "p4", "p5":
 		path = config.GetString("outpath." + path)
 	}
-	// 在这里直接判断txt文件
-	// ...
 	if config.GetBool("app.autoCreatePath") {
 		os.MkdirAll(path, 0666)
 	}
