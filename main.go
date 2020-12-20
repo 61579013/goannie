@@ -364,7 +364,7 @@ GETSAVEPATH:
 	// 是否过滤重复下载？
 	var isDeWeight string
 	isDeWeightBool := true
-	err = getInput("是否过滤重复下载？ yes or no (yse)", &isDeWeight)
+	err = getInput("是否过滤重复下载？ yes or no (yes)", &isDeWeight)
 	if isDeWeight == "no" {
 		isDeWeightBool = false
 	}
