@@ -45,6 +45,14 @@ var (
 	RedisConfFile = fmt.Sprintf("%s\\redis.windows-service.conf", AppBinPath)
 	// Config 基本配置
 	Config *viper.Viper
+	// FakeHeaders fake http headers
+	FakeHeaders = map[string]string{
+		"Accept":          "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+		"Accept-Charset":  "UTF-8,*;q=0.5",
+		"Accept-Encoding": "gzip,deflate,sdch",
+		"Accept-Language": "en-US,en;q=0.8",
+		"User-Agent":      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_13_6) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/69.0.3497.81 Safari/537.36",
+	}
 )
 
 // 初始化基本配置
@@ -58,6 +66,9 @@ func init() {
 	Config.SetDefault("app.checkDuplication", true)
 	Config.SetDefault("app.autoCreatePath", true)
 	Config.SetDefault("app.isFiltrationID", true)
+	Config.SetDefault("app.retryTimes", 100)
+	Config.SetDefault("app.refer", "")
+	Config.SetDefault("app.debug", false)
 	Config.SetDefault("binary.check", true)
 	Config.SetDefault("binary.UpdateNetworkJSONFile", "http://image.68wu.cn/goannie/binary_version.json")
 	Config.SetDefault("binary.UpdateLockTimeOut", 150)

@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"io/ioutil"
 	"net/url"
 	"os"
 	"os/exec"
@@ -10,6 +11,7 @@ import (
 
 	"gitee.com/rock_rabbit/goannie/extractors"
 	"gitee.com/rock_rabbit/goannie/reptiles"
+	"gitee.com/rock_rabbit/goannie/request"
 	"gitee.com/rock_rabbit/goannie/storage"
 
 	"gitee.com/rock_rabbit/goannie/binary"
@@ -84,7 +86,7 @@ GETURL:
 	if filepath.Ext(url) == ".txt" {
 		goto GETURL
 	}
-	cookie := getCookiepath(url)
+	cookie := setRequestOptions(getCookiepath(url))
 	reptilesData, err := reptiles.Extract(url, reptilesTypes.Options{
 		Cookie: cookie,
 		Verify: verify,
@@ -103,6 +105,28 @@ GETURL:
 		}
 	}
 	goto GETURL
+}
+
+func setRequestOptions(cookie string) string {
+	if cookie != "" {
+		// If cookie is a file path, convert it to a string to ensure cookie is always string
+		if _, fileErr := os.Stat(cookie); fileErr == nil {
+			// Cookie is a file
+			data, err := ioutil.ReadFile(cookie)
+			if err != nil {
+				utils.ErrInfo(err.Error())
+				return ""
+			}
+			cookie = strings.TrimSpace(string(data))
+		}
+	}
+	request.SetOptions(request.Options{
+		RetryTimes: config.GetInt("app.retryTimes"),
+		Cookie:     cookie,
+		Refer:      config.GetString("app.refer"),
+		Debug:      config.GetBool("app.debug"),
+	})
+	return cookie
 }
 
 func getCookiepath(u string) string {
