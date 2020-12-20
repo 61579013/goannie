@@ -55,6 +55,8 @@ var CONN redis.Conn
 
 func main() {
 	defer CONN.Close()
+	// 创建 redis 存储器
+	// s := storage.NewRedis(CONN)
 
 }
 
@@ -65,8 +67,8 @@ func sayHello() {
 	hiWhite := color.New(color.FgHiWhite)
 	green.Println(config.TITLE)
 	magenta.Printf("	版本: %s	更新时间: %s\n\n", config.VERSION, config.UPDATETIME)
-	hiBlue.Printf("%s %s%s %s%s\n", green.Sprint("$"), hiBlue.Sprint("作者昵称："), hiWhite.Sprint("rockrabbit"), hiBlue.Sprint("作者主页："), hiWhite.Sprint("https://www.68wu.com"))
-	hiBlue.Printf("%s %s%s\n", green.Sprint("$"), hiBlue.Sprint("软件主页："), hiWhite.Sprint("https://gitee.com/rock_rabbit/goannie"))
+	hiBlue.Printf("%s %s%s %s%s\n", green.Sprint("$"), hiBlue.Sprint("作者："), hiWhite.Sprint("rockrabbit"), hiBlue.Sprint("作者主页："), hiWhite.Sprint("https://www.68wu.com"))
+	hiBlue.Printf("%s %s%s %s%s\n", green.Sprint("$"), hiBlue.Sprint("GIT仓库："), hiWhite.Sprint("https://gitee.com/rock_rabbit/goannie"), hiBlue.Sprint("开源协议："), hiWhite.Sprint("MIT"))
 	fmt.Println("")
 	hiBlue.Printf("……………………………… %s %s\n", hiWhite.Sprint("下载统计"), hiBlue.Sprint("………………………………"))
 	videoIDCount()
