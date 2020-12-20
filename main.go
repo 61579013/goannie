@@ -86,7 +86,8 @@ GETURL:
 	if filepath.Ext(url) == ".txt" {
 		goto GETURL
 	}
-	cookie := setRequestOptions(getCookiepath(url))
+	cookiePath, defCookie := getCookiepath(url)
+	cookie := setRequestOptions(cookiePath, defCookie)
 	reptilesData, err := reptiles.Extract(url, reptilesTypes.Options{
 		Cookie: cookie,
 		Verify: verify,
@@ -107,7 +108,8 @@ GETURL:
 	goto GETURL
 }
 
-func setRequestOptions(cookie string) string {
+func setRequestOptions(cookie, defCookie string) string {
+	cookiePath := cookie
 	if cookie != "" {
 		// If cookie is a file path, convert it to a string to ensure cookie is always string
 		if _, fileErr := os.Stat(cookie); fileErr == nil {
@@ -120,6 +122,9 @@ func setRequestOptions(cookie string) string {
 			cookie = strings.TrimSpace(string(data))
 		}
 	}
+	if cookie == cookiePath || cookie == "" {
+		cookie = strings.TrimSpace(defCookie)
+	}
 	request.SetOptions(request.Options{
 		RetryTimes: config.GetInt("app.retryTimes"),
 		Cookie:     cookie,
@@ -129,12 +134,12 @@ func setRequestOptions(cookie string) string {
 	return cookie
 }
 
-func getCookiepath(u string) string {
+func getCookiepath(u string) (string, string) {
 	var domain string
 	u = strings.TrimSpace(u)
 	parseU, err := url.ParseRequestURI(u)
 	if err != nil {
-		return ""
+		return "", ""
 	}
 	if parseU.Host == "haokan.baidu.com" {
 		domain = "haokan"
@@ -142,7 +147,7 @@ func getCookiepath(u string) string {
 		domain = utils.Domain(parseU.Host)
 	}
 	if _, ok := extractors.ExtractorMap[domain]; !ok {
-		return ""
+		return "", ""
 	}
 	extractor := extractors.ExtractorMap[domain]
 	filename := fmt.Sprintf("%s.txt", extractor.Key())
@@ -152,7 +157,7 @@ func getCookiepath(u string) string {
 	hiWhite := color.New(color.FgHiWhite)
 	hiBlue := color.New(color.FgHiBlue)
 	hiBlue.Printf("%s%s %s%s %s%s\n", hiBlue.Sprint("Name："), hiWhite.Sprint(extractor.Name()), hiBlue.Sprint("Key："), hiWhite.Sprint(extractor.Key()), hiBlue.Sprint("Cookiepath："), hiWhite.Sprint(cookiepath))
-	return cookiepath
+	return cookiepath, extractor.DefCookie()
 }
 
 func getSavepath() (string, error) {

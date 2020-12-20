@@ -27,7 +27,7 @@ func init() {
 }
 
 func insidePage(url string, option types.Options) ([]*types.Data, error) {
-	return nil, errors.New("暂不支持此链接")
+	return []*types.Data{&types.Data{URL: url}}, nil
 }
 
 type reptiles struct{}
