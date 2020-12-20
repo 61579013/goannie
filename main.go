@@ -55,9 +55,62 @@ var CONN redis.Conn
 
 func main() {
 	defer CONN.Close()
+	var err error
 	// 创建 redis 存储器
 	// s := storage.NewRedis(CONN)
+GETSAVEPATH:
+	sayPathlist()
+	var savePath string
+	if savePath, err = getSavepath(); err != nil {
+		utils.ErrInfo(err.Error())
+		goto GETSAVEPATH
+	}
+	fmt.Println(savePath)
+}
 
+func getSavepath() (string, error) {
+	var (
+		err  error
+		path string
+	)
+	if err = utils.GetStrInput("保存路径", &path); err != nil {
+		return "", err
+	}
+	switch path {
+	case "p1", "p2", "p3", "p4", "p5":
+		path = config.GetString("outpath." + path)
+	}
+	// 在这里直接判断txt文件
+	// ...
+	if config.GetBool("app.autoCreatePath") {
+		os.MkdirAll(path, 0666)
+	}
+	_, err = os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return "", err
+		}
+		return "", err
+	}
+	savePath(path)
+	return path, nil
+}
+
+func savePath(s string) {
+	p1 := config.GetString("outpath.p1")
+	p2 := config.GetString("outpath.p2")
+	p3 := config.GetString("outpath.p3")
+	p4 := config.GetString("outpath.p4")
+	p5 := config.GetString("outpath.p5")
+	if s == p1 || s == p2 || s == p3 || s == p4 || s == p5 || s == "" {
+		return
+	}
+	config.Set("outpath.p1", s)
+	config.Set("outpath.p2", p1)
+	config.Set("outpath.p3", p2)
+	config.Set("outpath.p4", p3)
+	config.Set("outpath.p5", p4)
+	config.WriteConfig()
 }
 
 func sayHello() {
@@ -72,6 +125,33 @@ func sayHello() {
 	fmt.Println("")
 	hiBlue.Printf("……………………………… %s %s\n", hiWhite.Sprint("下载统计"), hiBlue.Sprint("………………………………"))
 	videoIDCount()
+	fmt.Println("")
+}
+
+func sayPathlist() {
+	hiWhite := color.New(color.FgHiWhite)
+	hiBlue := color.New(color.FgHiBlue)
+	hiBlue.Printf("……………………………… %s %s\n", hiWhite.Sprint("历史保存路径"), hiBlue.Sprint("………………………………"))
+	p1 := config.GetString("outpath.p1")
+	p2 := config.GetString("outpath.p2")
+	p3 := config.GetString("outpath.p3")
+	p4 := config.GetString("outpath.p4")
+	p5 := config.GetString("outpath.p5")
+	if p1 != "" {
+		hiBlue.Printf("[p1] %s\n", hiWhite.Sprint(config.GetString("outpath.p1")))
+	}
+	if p2 != "" {
+		hiBlue.Printf("[p2] %s\n", hiWhite.Sprint(config.GetString("outpath.p2")))
+	}
+	if p3 != "" {
+		hiBlue.Printf("[p3] %s\n", hiWhite.Sprint(config.GetString("outpath.p3")))
+	}
+	if p4 != "" {
+		hiBlue.Printf("[p4] %s\n", hiWhite.Sprint(config.GetString("outpath.p4")))
+	}
+	if p5 != "" {
+		hiBlue.Printf("[p5] %s\n", hiWhite.Sprint(config.GetString("outpath.p5")))
+	}
 	fmt.Println("")
 }
 

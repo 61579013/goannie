@@ -56,6 +56,7 @@ func init() {
 	Config.SetConfigType("toml")
 	// 设置默认参数
 	Config.SetDefault("app.checkDuplication", true)
+	Config.SetDefault("app.autoCreatePath", true)
 	Config.SetDefault("binary.check", true)
 	Config.SetDefault("binary.UpdateNetworkJSONFile", "http://image.68wu.cn/goannie/binary_version.json")
 	Config.SetDefault("binary.UpdateLockTimeOut", 150)
@@ -63,7 +64,7 @@ func init() {
 	Config.SetDefault("redis.dial", true)
 	Config.SetDefault("redis.network", "tcp")
 	Config.SetDefault("redis.address", "localhost:6379")
-	Config.SetDefault("outpath.p1", "./默认保存目录")
+	Config.SetDefault("outpath.p1", "./保存目录")
 	Config.SetDefault("outpath.p2", "")
 	Config.SetDefault("outpath.p3", "")
 	Config.SetDefault("outpath.p4", "")
@@ -98,6 +99,11 @@ func WriteConfig() error {
 // WatchConfig 重新读取配置
 func WatchConfig() {
 	Config.WatchConfig()
+}
+
+// Set 设置配置
+func Set(key string, value interface{}) {
+	Config.Set(key, value)
 }
 
 // GetString 获取String配置
