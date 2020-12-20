@@ -5,6 +5,8 @@ import (
 	"os"
 	"os/exec"
 
+	"gitee.com/rock_rabbit/goannie/extractors"
+
 	"gitee.com/rock_rabbit/goannie/binary"
 	"gitee.com/rock_rabbit/goannie/config"
 	"gitee.com/rock_rabbit/goannie/utils"
@@ -159,41 +161,9 @@ func sayPathlist() {
 func videoIDCount() {
 	hiWhite := color.New(color.FgHiWhite)
 	hiBlue := color.New(color.FgHiBlue)
-	ptList := []map[string]string{
-		{
-			"name":  "腾讯视频",
-			"pt":    "tengxun",
-			"count": "",
-		}, {
-			"name":  "爱奇艺视频",
-			"pt":    "iqiyi",
-			"count": "",
-		}, {
-			"name":  "好看视频",
-			"pt":    "haokan",
-			"count": "",
-		}, {
-			"name":  "哔哩哔哩",
-			"pt":    "bilibili",
-			"count": "",
-		}, {
-			"name":  "西瓜视频",
-			"pt":    "xigua",
-			"count": "",
-		}, {
-			"name":  "抖音视频",
-			"pt":    "douyin",
-			"count": "",
-		}, {
-			"name":  "优酷视频",
-			"pt":    "youku",
-			"count": "",
-		},
-	}
-	for idx, item := range ptList {
-		resInt, _ := redis.Int(CONN.Do("SCARD", item["pt"]))
-		ptList[idx]["count"] = fmt.Sprintf("%d", resInt)
-		hiBlue.Printf("%s%s  ", hiBlue.Sprintf("%s：", item["name"]), hiWhite.Sprint(ptList[idx]["count"]))
+	for _, e := range extractors.ExtractorMap {
+		resInt, _ := redis.Int(CONN.Do("SCARD", e.Key()))
+		hiBlue.Printf("%s%s  ", hiBlue.Sprintf("%s：", e.Name()), hiWhite.Sprint(resInt))
 	}
 	fmt.Println("")
 }
