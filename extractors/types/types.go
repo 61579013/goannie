@@ -73,6 +73,7 @@ func (d *DownloadPrint) FormatSize() {
 
 // Print 打印
 func (d DownloadPrint) Print() {
+	fmt.Println("")
 	color.Set(color.FgBlue, color.Bold)
 	fmt.Printf(" Site:      ")
 	color.Unset()
@@ -100,4 +101,5 @@ func (d DownloadPrint) Print() {
 	fmt.Printf("     Size:            ")
 	color.Unset()
 	fmt.Printf("%s (%d Bytes)\n", d.Size, d.SizeBytes)
+	fmt.Println("")
 }

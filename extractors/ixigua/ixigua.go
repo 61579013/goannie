@@ -8,6 +8,8 @@ import (
 	"regexp"
 	"strings"
 
+	"gitee.com/rock_rabbit/goannie/config"
+
 	"gitee.com/rock_rabbit/goannie/downloader"
 	"gitee.com/rock_rabbit/goannie/extractors/types"
 	"gitee.com/rock_rabbit/goannie/request"
@@ -38,12 +40,7 @@ func (e *extractor) DefCookie() string {
 
 // Extract 运行解析器
 func (e *extractor) Extract(url string, option types.Options) error {
-	html, err := request.GetByte(url, referer, map[string]string{
-		"Connection":                "keep-alive",
-		"Accept":                    "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.9",
-		"Accept-Language":           "zh-CN,zh;q=0.9,en;q=0.8,en-GB;q=0.7,en-US;q=0.6",
-		"Upgrade-Insecure-Requests": "1",
-	})
+	html, err := request.GetByte(url, referer, nil)
 	if err != nil {
 		return err
 	}
@@ -52,10 +49,22 @@ func (e *extractor) Extract(url string, option types.Options) error {
 		return err
 	}
 	title := ratedData.AnyVideo.GidInformation.PackerData.Video.Title
-	downloadURL, quality := getNewDownloadUrl(ratedData)
+	vid := ratedData.AnyVideo.GidInformation.PackerData.Video.VID
+	if config.GetBool("app.debug") {
+		fmt.Printf("title: %s\n", title)
+		fmt.Printf("vid: %s\n", vid)
+	}
+	if config.GetBool("app.isFiltrationID") && vid != "" && option.Verify.Check(e.Key(), vid) {
+		return fmt.Errorf("%s 在过滤库中，修改配置文件isFiltrationID为false不再过滤。", vid)
+	}
+	downloadURL, quality := getNewDownloadURL(ratedData)
+	if downloadURL == "" {
+		return errors.New("获取下载链接失败")
+	}
 	if err := download(e.Name(), downloadURL, title, quality, option); err != nil {
 		return err
 	}
+	option.Verify.Add(e.Key(), vid)
 	return nil
 }
 
@@ -65,32 +74,38 @@ func New() types.Extractor {
 }
 
 func download(name, url, title, quality string, option types.Options) error {
+	if config.GetBool("app.debug") {
+		fmt.Printf("downloadURL: %s\n", url)
+	}
 	types.NewDownloadPrint(fmt.Sprintf("%s ixigua.com", name), title, quality, url).Print()
-	downloader.New(url, option.SavePath).SetOutputName(fmt.Sprintf("%s.mp4", title)).Run()
+	if err := downloader.New(url, option.SavePath).SetOutputName(fmt.Sprintf("%s.mp4", title)).Run(); err != nil {
+		return err
+	}
+	fmt.Println("")
 	return nil
 }
 
-func getNewDownloadUrl(d *SsrHydratedData) (string, string) {
+func getNewDownloadURL(d *SsrHydratedData) (string, string) {
 	videoList := d.AnyVideo.GidInformation.PackerData.Video.VideoResource.Dash120Fps.DynamicVideo.DynamicVideoList
 	if len(videoList) != 0 && videoList[len(videoList)-1].MainURL != "" {
 		decoded, _ := base64.StdEncoding.DecodeString(videoList[len(videoList)-1].MainURL)
-		return string(decoded), videoList[len(videoList)-1].Quality
+		return string(decoded), videoList[len(videoList)-1].Definition
 	}
 	vl := d.AnyVideo.GidInformation.PackerData.Video.VideoResource.Normal.VideoList
 	var murl string
 	var quality string
 	if vl.Video4.MainURL != "" {
 		murl = vl.Video4.MainURL
-		quality = vl.Video4.Quality
+		quality = vl.Video4.Definition
 	} else if vl.Video3.MainURL != "" {
 		murl = vl.Video3.MainURL
-		quality = vl.Video3.Quality
+		quality = vl.Video3.Definition
 	} else if vl.Video2.MainURL != "" {
 		murl = vl.Video2.MainURL
-		quality = vl.Video2.Quality
+		quality = vl.Video2.Definition
 	} else if vl.Video1.MainURL != "" {
 		murl = vl.Video1.MainURL
-		quality = vl.Video1.Quality
+		quality = vl.Video1.Definition
 	}
 	r, _ := base64.StdEncoding.DecodeString(murl)
 	return string(r), quality

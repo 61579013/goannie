@@ -4,6 +4,7 @@ import (
 	"compress/flate"
 	"compress/gzip"
 	"crypto/tls"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -127,6 +128,15 @@ func Request(method, url string, body io.Reader, headers map[string]string) (*ht
 func Get(url, refer string, headers map[string]string) (string, error) {
 	body, err := GetByte(url, refer, headers)
 	return string(body), err
+}
+
+// GetJSON get json
+func GetJSON(url, refer string, headers map[string]string, v interface{}) error {
+	data, err := GetByte(url, refer, headers)
+	if err != nil {
+		return err
+	}
+	return json.Unmarshal(data, v)
 }
 
 // GetByte get request

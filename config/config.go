@@ -13,7 +13,7 @@ const (
 	// VERSION 版本号
 	VERSION = "1.0.0"
 	// UPDATETIME 更新时间
-	UPDATETIME = "2020-12-19"
+	UPDATETIME = "2020-12-21"
 	// TITLE 软件标题
 	TITLE = `
                                         __           
@@ -69,6 +69,7 @@ func init() {
 	Config.SetDefault("app.retryTimes", 100)
 	Config.SetDefault("app.refer", "")
 	Config.SetDefault("app.debug", false)
+	Config.SetDefault("reptiles.regexpTitle", ".*?")
 	Config.SetDefault("binary.check", true)
 	Config.SetDefault("binary.UpdateNetworkJSONFile", "http://image.68wu.cn/goannie/binary_version.json")
 	Config.SetDefault("binary.UpdateLockTimeOut", 150)

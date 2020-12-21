@@ -99,6 +99,13 @@ func Info(a ...interface{}) {
 	color.New(color.FgBlue).Print(a...)
 }
 
+// InfoKv 打印ky两种颜色
+func InfoKv(k, v string) {
+	hiBlue := color.New(color.FgHiBlue)
+	hiWhite := color.New(color.FgHiWhite)
+	hiBlue.Printf("%s%s\n", hiBlue.Sprint(k), hiWhite.Sprint(v))
+}
+
 // GetCurrentPath 获取程序所在目录
 func GetCurrentPath() (string, error) {
 	file, err := exec.LookPath(os.Args[0])

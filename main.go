@@ -219,6 +219,7 @@ func sayHello() {
 }
 
 func sayPathlist() {
+	config.WatchConfig()
 	hiWhite := color.New(color.FgHiWhite)
 	hiBlue := color.New(color.FgHiBlue)
 	hiBlue.Printf("……………………………… %s %s\n", hiWhite.Sprint("历史保存路径"), hiBlue.Sprint("………………………………"))

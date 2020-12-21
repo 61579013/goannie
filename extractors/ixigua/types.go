@@ -7,6 +7,7 @@ type SsrHydratedData struct {
 			PackerData struct {
 				Video struct {
 					Title         string `json:"title"`
+					VID           string `json:"vid"`
 					VideoResource struct {
 						Normal struct {
 							Status         int     `json:"status"`
