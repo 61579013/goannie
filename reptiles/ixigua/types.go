@@ -7,7 +7,6 @@ type homeHydratedData struct {
 		Name            string `json:"name"`
 		Introduce       string `json:"introduce"`
 		FansNum         string `json:"fansNum"`
-		FollowNum       string `json:"followNum"`
 		DiggNum         int    `json:"diggNum"`
 		VerifiedContent string `json:"verified_content"`
 	} `json:"AuthorDetailInfo"`
