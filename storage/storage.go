@@ -16,17 +16,26 @@ type Redis struct {
 
 // Add 新增k中的内容
 func (conn Redis) Add(k, v string) error {
+	_, err := conn.Do("SADD", k, v)
+	if err != nil {
+		return err
+	}
 	return nil
 }
 
 // Check 检查k,v是否存在
 func (conn Redis) Check(k, v string) bool {
+	isVid, _ := redis.Int(conn.Do("SISMEMBER", k, v))
+	if isVid == 0 {
+		return false
+	}
 	return true
 }
 
 // Count 统计k中v的数量
 func (conn Redis) Count(k string) int {
-	return 0
+	resInt, _ := redis.Int(conn.Do("SCARD", k))
+	return resInt
 }
 
 // NewRedis 创建一个redis存储器

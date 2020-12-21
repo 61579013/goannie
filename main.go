@@ -69,6 +69,8 @@ func main() {
 	var err error
 	// 创建 redis 存储器
 	verify := storage.NewRedis(CONN)
+	videoIDCount(verify)
+	fmt.Println("")
 GETSAVEPATH:
 	sayPathlist()
 	var savePath string
@@ -214,8 +216,6 @@ func sayHello() {
 	hiBlue.Printf("%s %s%s %s%s\n", green.Sprint("$"), hiBlue.Sprint("GIT仓库："), hiWhite.Sprint("https://gitee.com/rock_rabbit/goannie"), hiBlue.Sprint("开源协议："), hiWhite.Sprint("MIT"))
 	fmt.Println("")
 	hiBlue.Printf("……………………………… %s %s\n", hiWhite.Sprint("下载统计"), hiBlue.Sprint("………………………………"))
-	videoIDCount()
-	fmt.Println("")
 }
 
 func sayPathlist() {
@@ -246,12 +246,11 @@ func sayPathlist() {
 }
 
 // videoIDCount 打印过滤库个数
-func videoIDCount() {
+func videoIDCount(verify storage.Storage) {
 	hiWhite := color.New(color.FgHiWhite)
 	hiBlue := color.New(color.FgHiBlue)
 	for _, e := range extractors.ExtractorMap {
-		resInt, _ := redis.Int(CONN.Do("SCARD", e.Key()))
-		hiBlue.Printf("%s%s  ", hiBlue.Sprintf("%s：", e.Name()), hiWhite.Sprint(resInt))
+		hiBlue.Printf("%s%s  ", hiBlue.Sprintf("%s：", e.Name()), hiWhite.Sprint(verify.Count(e.Key())))
 	}
 	fmt.Println("")
 }
