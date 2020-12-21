@@ -37,6 +37,10 @@ type VersionJSON struct {
 		Version string `json:"version"`
 		FileURL string `json:"fileURL"`
 	} `json:"redisConf"`
+	NodeJS struct {
+		Version string `json:"version"`
+		FileURL string `json:"fileURL"`
+	} `json:"nodeJS"`
 }
 
 // Init 初始化VersionJSON
@@ -52,6 +56,9 @@ func (vj *VersionJSON) Init() {
 	}
 	if vj.RedisConf.Version == "" {
 		vj.RedisConf.Version = "0.0.0"
+	}
+	if vj.NodeJS.Version == "" {
+		vj.NodeJS.Version = "0.0.0"
 	}
 }
 
@@ -146,6 +153,12 @@ func IsUpdate() (*VersionJSON, error) {
 	if RedisConfUpdate == VersionSmall {
 		// 检查到需要更新
 		retData.RedisConf = networkFile.RedisConf
+	}
+	// nodeJS检查
+	NodeJSUpdate := compareStrVer(localFile.NodeJS.Version, networkFile.NodeJS.Version)
+	if NodeJSUpdate == VersionSmall {
+		// 检查到需要更新
+		retData.NodeJS = networkFile.NodeJS
 	}
 	return &retData, nil
 }
@@ -327,6 +340,27 @@ func ExecUpdate(vj *VersionJSON) error {
 		}
 		// 更新文件
 		resData.RedisConf = vj.RedisConf
+		jsonData, err := json.Marshal(resData)
+		if err != nil {
+			return err
+		}
+		// 清空文件
+		f.Truncate(0)
+		// 写文件
+		if _, err := f.WriteAt(jsonData, 0); err != nil {
+			return err
+		}
+	}
+
+	// nodejs
+	if vj.NodeJS.Version != "" && vj.NodeJS.FileURL != "" {
+		// 执行
+		utils.Infof("检查到需要更新 NodeJS version:%s 启动下载\n", vj.NodeJS.Version)
+		if err = DownloadFile(vj.NodeJS.FileURL, config.NodejsFile); err != nil {
+			return err
+		}
+		// 更新文件
+		resData.NodeJS = vj.NodeJS
 		jsonData, err := json.Marshal(resData)
 		if err != nil {
 			return err

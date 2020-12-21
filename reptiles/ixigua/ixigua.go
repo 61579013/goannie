@@ -1,11 +1,16 @@
 package ixigua
 
 import (
+	"bytes"
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"gitee.com/rock_rabbit/goannie/config"
 
@@ -19,6 +24,8 @@ const (
 	referer = "https://www.ixigua.com"
 	host    = "https://www.ixigua.com"
 )
+
+var ixiguaSignatureJSPath = filepath.Join(config.AppDataPath, "ixiguaSignatureJS.js")
 
 // SubCmdList 子命令集
 var SubCmdList types.SubCmdList
@@ -40,6 +47,8 @@ func init() {
 		},
 		Extract: homePage,
 	})
+	// 创建js文件
+	createSignatureJS()
 }
 
 type reptiles struct{}
@@ -62,13 +71,14 @@ func insidePage(url string, option types.Options) ([]*types.Data, error) {
 }
 
 func homePage(url string, option types.Options) ([]*types.Data, error) {
-	start, end, userid, err := homePageGetInput(url)
+	start, end, count, userid, err := homePageGetInput(url)
 	if err != nil {
 		return nil, err
 	}
 	retData := []*types.Data{}
 	onCount := 0
 	onMaxTime := 0
+	template := "\r总数：%d 当前数：%d 已采集数：%d"
 	for {
 		if onCount > end {
 			break
@@ -82,6 +92,7 @@ func homePage(url string, option types.Options) ([]*types.Data, error) {
 			if onCount > end {
 				break
 			}
+			utils.Infof(template, count, onCount, len(retData))
 			regexpTitle := regexp.MustCompile(config.GetString("reptiles.regexpTitle")).MatchString(v.Title)
 			if onCount >= start && onCount <= end && regexpTitle {
 				retData = append(retData, &types.Data{URL: fmt.Sprintf("https://www.ixigua.com/%s", v.Gid)})
@@ -89,15 +100,20 @@ func homePage(url string, option types.Options) ([]*types.Data, error) {
 			onMaxTime = v.PublishTime
 			onCount++
 		}
+		if !authorVideo.Data.HasMore || onCount >= end {
+			break
+		}
+		time.Sleep(2 * time.Second)
 	}
-	utils.InfoKv("数量：", fmt.Sprintf("%d", len(retData)))
+	fmt.Println("")
+	utils.InfoKv("采集数量：", fmt.Sprintf("%d", len(retData)))
 	return retData, nil
 }
 
-func homePageGetInput(url string) (int, int, string, error) {
+func homePageGetInput(url string) (int, int, int, string, error) {
 	HydratedData, err := getHomeHydratedData(url)
 	if err != nil {
-		return 0, 0, "", err
+		return 0, 0, 0, "", err
 	}
 	//打印作者信息
 	fmt.Println("")
@@ -113,15 +129,15 @@ func homePageGetInput(url string) (int, int, string, error) {
 		end   int
 	)
 	if err := utils.GetIntInput("起始数", &start); err != nil {
-		return 0, 0, "", err
+		return 0, 0, 0, "", err
 	}
 	if err := utils.GetIntInput("结束数", &end); err != nil {
-		return 0, 0, "", err
+		return 0, 0, 0, "", err
 	}
 	if start > videoCnt || start <= 0 || end <= 0 || end > videoCnt || start > end {
-		return 0, 0, "", errors.New("值超出范围")
+		return 0, 0, 0, "", errors.New("值超出范围")
 	}
-	return start, end, userid, nil
+	return start, end, videoCnt, userid, nil
 }
 
 func getHomeHydratedData(url string) (*homeHydratedData, error) {
@@ -142,10 +158,30 @@ func getHomeHydratedData(url string) (*homeHydratedData, error) {
 }
 
 func getHomeAuthorVideo(authorID string, maxTime int) (*homeAuthorVideo, error) {
-	api := fmt.Sprintf("https://www.ixigua.com/api/videov2/author/video?author_id=%s&type=video&max_time=%d", authorID, maxTime)
+	signature := getHomeAuthorVideoSignature(authorID, maxTime)
+	api := fmt.Sprintf("https://www.ixigua.com/api/videov2/author/video?author_id=%s&type=video&max_time=%d&_signature=%s", authorID, maxTime, signature)
 	var jsonData homeAuthorVideo
 	if err := request.GetJSON(api, referer, nil, &jsonData); err != nil {
 		return nil, err
 	}
 	return &jsonData, nil
+}
+
+func getHomeAuthorVideoSignature(authorID string, maxTime int) string {
+	cmd := exec.Command("node", ixiguaSignatureJSPath, authorID, fmt.Sprintf("%d", maxTime))
+	var out bytes.Buffer
+	cmd.Stdout = &out
+	if err := cmd.Run(); err != nil {
+		return ""
+	}
+	return strings.ReplaceAll(out.String(), "\n", "")
+}
+
+func createSignatureJS() {
+	f, err := os.OpenFile(ixiguaSignatureJSPath, os.O_CREATE|os.O_RDWR|os.O_TRUNC, 0666)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	f.WriteString(signatureJS)
 }

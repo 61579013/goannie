@@ -132,6 +132,11 @@ func Get(url, refer string, headers map[string]string) (string, error) {
 
 // GetJSON get json
 func GetJSON(url, refer string, headers map[string]string, v interface{}) error {
+	if headers == nil {
+		headers = map[string]string{
+			"accept": "application/json, text/plain, */*",
+		}
+	}
 	data, err := GetByte(url, refer, headers)
 	if err != nil {
 		return err

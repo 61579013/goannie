@@ -98,7 +98,9 @@ GETURL:
 		utils.ErrInfo(err.Error())
 		goto GETURL
 	}
-	for _, d := range reptilesData {
+	dataCount := len(reptilesData)
+	for i, d := range reptilesData {
+		utils.Infof(" 下载进度：%d/%d\n", i+1, dataCount)
 		if err = extractors.Extract(d.URL, extractorsTypes.Options{
 			Cookie:   cookie,
 			Verify:   verify,
@@ -212,7 +214,7 @@ func sayHello() {
 	hiWhite := color.New(color.FgHiWhite)
 	green.Println(config.TITLE)
 	magenta.Printf("	版本: %s	更新时间: %s\n\n", config.VERSION, config.UPDATETIME)
-	hiBlue.Printf("%s %s%s %s%s\n", green.Sprint("$"), hiBlue.Sprint("作者："), hiWhite.Sprint("rockrabbit"), hiBlue.Sprint("作者主页："), hiWhite.Sprint("https://www.68wu.com"))
+	hiBlue.Printf("%s %s%s %s%s\n", green.Sprint("$"), hiBlue.Sprint("作者："), hiWhite.Sprint("rockrabbit"), hiBlue.Sprint("作者主页："), hiWhite.Sprint("https://www.68wu.cn"))
 	hiBlue.Printf("%s %s%s %s%s\n", green.Sprint("$"), hiBlue.Sprint("GIT仓库："), hiWhite.Sprint("https://gitee.com/rock_rabbit/goannie"), hiBlue.Sprint("开源协议："), hiWhite.Sprint("MIT"))
 	fmt.Println("")
 	hiBlue.Printf("……………………………… %s %s\n", hiWhite.Sprint("下载统计"), hiBlue.Sprint("………………………………"))

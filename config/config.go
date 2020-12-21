@@ -11,7 +11,7 @@ import (
 
 const (
 	// VERSION 版本号
-	VERSION = "1.0.0"
+	VERSION = "1.0.1"
 	// UPDATETIME 更新时间
 	UPDATETIME = "2020-12-21"
 	// TITLE 软件标题
@@ -43,6 +43,8 @@ var (
 	RedisFile = fmt.Sprintf("%s\\redis-server.exe", AppBinPath)
 	// RedisConfFile 程序redisconf存放位置
 	RedisConfFile = fmt.Sprintf("%s\\redis.windows-service.conf", AppBinPath)
+	// NodejsFile 程序Nodejs存放位置
+	NodejsFile = fmt.Sprintf("%s\\node.exe", AppBinPath)
 	// Config 基本配置
 	Config *viper.Viper
 	// FakeHeaders fake http headers
