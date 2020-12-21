@@ -1,6 +1,6 @@
 package ixigua
 
-type SsrHydratedData struct {
+type ssrHydratedData struct {
 	AnyVideo struct {
 		GidInformation struct {
 			Gid        string `json:"gid"`
@@ -17,20 +17,7 @@ type SsrHydratedData struct {
 							VideoID        string  `json:"video_id"`
 							VideoDuration  float64 `json:"video_duration"`
 							MediaType      string  `json:"media_type"`
-							BigThumbs      []struct {
-								ImgNum   int      `json:"img_num"`
-								URI      string   `json:"uri"`
-								ImgURL   string   `json:"img_url"`
-								ImgUrls  []string `json:"img_urls"`
-								ImgXSize int      `json:"img_x_size"`
-								ImgYSize int      `json:"img_y_size"`
-								ImgXLen  int      `json:"img_x_len"`
-								ImgYLen  int      `json:"img_y_len"`
-								Duration float64  `json:"duration"`
-								Interval int      `json:"interval"`
-								Fext     string   `json:"fext"`
-							} `json:"big_thumbs"`
-							VideoList struct {
+							VideoList      struct {
 								Video1 struct {
 									Definition      string `json:"definition"`
 									Quality         string `json:"quality"`
@@ -126,20 +113,7 @@ type SsrHydratedData struct {
 							VideoID        string  `json:"video_id"`
 							VideoDuration  float64 `json:"video_duration"`
 							MediaType      string  `json:"media_type"`
-							BigThumbs      []struct {
-								ImgNum   int      `json:"img_num"`
-								URI      string   `json:"uri"`
-								ImgURL   string   `json:"img_url"`
-								ImgUrls  []string `json:"img_urls"`
-								ImgXSize int      `json:"img_x_size"`
-								ImgYSize int      `json:"img_y_size"`
-								ImgXLen  int      `json:"img_x_len"`
-								ImgYLen  int      `json:"img_y_len"`
-								Duration float64  `json:"duration"`
-								Interval int      `json:"interval"`
-								Fext     string   `json:"fext"`
-							} `json:"big_thumbs"`
-							DynamicVideo struct {
+							DynamicVideo   struct {
 								DynamicType      string `json:"dynamic_type"`
 								DynamicVideoList []struct {
 									Definition string `json:"definition"`
@@ -192,6 +166,60 @@ type SsrHydratedData struct {
 						} `json:"dash_120fps"`
 					} `json:"videoResource"`
 				} `json:"video"`
+			} `json:"packerData"`
+		} `json:"gidInformation"`
+	} `json:"anyVideo"`
+}
+
+type ssrHydratedDataEpisode struct {
+	AnyVideo struct {
+		GidInformation struct {
+			AlbumID    string `json:"albumId"`
+			PackerData struct {
+				EpisodeInfo struct {
+					EpisodeID   string `json:"episodeId"`
+					AlbumID     string `json:"albumId"`
+					Rank        int    `json:"rank"`
+					SeqOld      string `json:"seqOld"`
+					Title       string `json:"title"`
+					Name        string `json:"name"`
+					BottomLabel string `json:"bottomLabel"`
+				} `json:"episodeInfo"`
+				VideoResource struct {
+					Vid    string `json:"vid"`
+					Normal struct {
+						VideoList struct {
+							Video1 struct {
+								Definition string `json:"definition"`
+								Quality    string `json:"quality"`
+								Vtype      string `json:"vtype"`
+								MainURL    string `json:"main_url"`
+								BackupURL1 string `json:"backup_url_1"`
+							} `json:"video_1"`
+							Video2 struct {
+								Definition string `json:"definition"`
+								Quality    string `json:"quality"`
+								Vtype      string `json:"vtype"`
+								MainURL    string `json:"main_url"`
+								BackupURL1 string `json:"backup_url_1"`
+							} `json:"video_2"`
+							Video3 struct {
+								Definition string `json:"definition"`
+								Quality    string `json:"quality"`
+								Vtype      string `json:"vtype"`
+								MainURL    string `json:"main_url"`
+								BackupURL1 string `json:"backup_url_1"`
+							} `json:"video_3"`
+							Video4 struct {
+								Definition string `json:"definition"`
+								Quality    string `json:"quality"`
+								Vtype      string `json:"vtype"`
+								MainURL    string `json:"main_url"`
+								BackupURL1 string `json:"backup_url_1"`
+							} `json:"video_4"`
+						} `json:"video_list"`
+					} `json:"normal"`
+				} `json:"videoResource"`
 			} `json:"packerData"`
 		} `json:"gidInformation"`
 	} `json:"anyVideo"`

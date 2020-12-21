@@ -44,12 +44,30 @@ func (e *extractor) Extract(url string, option types.Options) error {
 	if err != nil {
 		return err
 	}
-	ratedData, err := getSsrHydratedData(html)
-	if err != nil {
-		return err
+	var (
+		title       string
+		vid         string
+		downloadURL string
+		quality     string
+	)
+	if regexp.MustCompile(`"albumId"`).Match(html) {
+		ratedData, err := getSsrHydratedDataEpisode(html)
+		if err != nil {
+			return err
+		}
+		episodeInfo := ratedData.AnyVideo.GidInformation.PackerData.EpisodeInfo
+		title = fmt.Sprintf("%s %s", episodeInfo.Title, episodeInfo.Name)
+		vid = episodeInfo.EpisodeID
+		downloadURL, quality = getDownloadURLEpisode(ratedData)
+	} else {
+		ratedData, err := getSsrHydratedData(html)
+		if err != nil {
+			return err
+		}
+		title = ratedData.AnyVideo.GidInformation.PackerData.Video.Title
+		vid = ratedData.AnyVideo.GidInformation.PackerData.Video.VID
+		downloadURL, quality = getDownloadURL(ratedData)
 	}
-	title := ratedData.AnyVideo.GidInformation.PackerData.Video.Title
-	vid := ratedData.AnyVideo.GidInformation.PackerData.Video.VID
 	if config.GetBool("app.debug") {
 		fmt.Printf("title: %s\n", title)
 		fmt.Printf("vid: %s\n", vid)
@@ -57,7 +75,6 @@ func (e *extractor) Extract(url string, option types.Options) error {
 	if config.GetBool("app.isFiltrationID") && vid != "" && option.Verify.Check(e.Key(), vid) {
 		return fmt.Errorf("%s 在过滤库中，修改配置文件isFiltrationID为false不再过滤。", vid)
 	}
-	downloadURL, quality := getNewDownloadURL(ratedData)
 	if downloadURL == "" {
 		return errors.New("获取下载链接失败")
 	}
@@ -85,7 +102,7 @@ func download(name, url, title, quality string, option types.Options) error {
 	return nil
 }
 
-func getNewDownloadURL(d *SsrHydratedData) (string, string) {
+func getDownloadURL(d *ssrHydratedData) (string, string) {
 	videoList := d.AnyVideo.GidInformation.PackerData.Video.VideoResource.Dash120Fps.DynamicVideo.DynamicVideoList
 	if len(videoList) != 0 && videoList[len(videoList)-1].MainURL != "" {
 		decoded, _ := base64.StdEncoding.DecodeString(videoList[len(videoList)-1].MainURL)
@@ -111,13 +128,47 @@ func getNewDownloadURL(d *SsrHydratedData) (string, string) {
 	return string(r), quality
 }
 
-func getSsrHydratedData(html []byte) (*SsrHydratedData, error) {
+func getDownloadURLEpisode(d *ssrHydratedDataEpisode) (string, string) {
+	vl := d.AnyVideo.GidInformation.PackerData.VideoResource.Normal.VideoList
+	var murl string
+	var quality string
+	if vl.Video4.MainURL != "" {
+		murl = vl.Video4.MainURL
+		quality = vl.Video4.Definition
+	} else if vl.Video3.MainURL != "" {
+		murl = vl.Video3.MainURL
+		quality = vl.Video3.Definition
+	} else if vl.Video2.MainURL != "" {
+		murl = vl.Video2.MainURL
+		quality = vl.Video2.Definition
+	} else if vl.Video1.MainURL != "" {
+		murl = vl.Video1.MainURL
+		quality = vl.Video1.Definition
+	}
+	r, _ := base64.StdEncoding.DecodeString(murl)
+	return string(r), quality
+}
+
+func getSsrHydratedData(html []byte) (*ssrHydratedData, error) {
 	jsonStrFind := regexp.MustCompile(`window\._SSR_HYDRATED_DATA=(.*?)</script>`).FindSubmatch(html)
 	if len(jsonStrFind) < 2 {
 		return nil, errors.New("解析数据失败")
 	}
 	jsonStr := strings.ReplaceAll(string(jsonStrFind[1]), ":undefined", ":\"undefined\"")
-	var jsonData SsrHydratedData
+	var jsonData ssrHydratedData
+	if err := json.Unmarshal([]byte(jsonStr), &jsonData); err != nil {
+		return nil, err
+	}
+	return &jsonData, nil
+}
+
+func getSsrHydratedDataEpisode(html []byte) (*ssrHydratedDataEpisode, error) {
+	jsonStrFind := regexp.MustCompile(`window\._SSR_HYDRATED_DATA=(.*?)</script>`).FindSubmatch(html)
+	if len(jsonStrFind) < 2 {
+		return nil, errors.New("解析数据失败")
+	}
+	jsonStr := strings.ReplaceAll(string(jsonStrFind[1]), ":undefined", ":\"undefined\"")
+	var jsonData ssrHydratedDataEpisode
 	if err := json.Unmarshal([]byte(jsonStr), &jsonData); err != nil {
 		return nil, err
 	}

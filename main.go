@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"gitee.com/rock_rabbit/goannie/extractors"
@@ -86,8 +87,39 @@ GETURL:
 	}
 	// 首先判断是否txt文件
 	if filepath.Ext(url) == ".txt" {
+		if err = runTxt(url, savePath, verify); err != nil {
+			utils.ErrInfo(err.Error())
+		}
 		goto GETURL
 	}
+	if err = run(url, savePath, verify); err != nil {
+		utils.ErrInfo(err.Error())
+	}
+	goto GETURL
+}
+
+func runTxt(txt, savePath string, verify storage.Storage) error {
+	f, err := os.Open(txt)
+	if err != nil {
+		return err
+	}
+	data, err := ioutil.ReadAll(f)
+	f.Close()
+	if err != nil {
+		return err
+	}
+	matched := regexp.MustCompile("(?s)(http|https):\\/\\/([\\w\\-]+(\\.[\\w\\-]+)*\\/)*[\\w\\-]+(\\.[\\w\\-]+)*\\/?(\\?([\\w\\-\\.,@?^=%&:\\/~\\+#]*)+)?")
+	urlList := matched.FindAllString(string(data), -1)
+	utils.Infoln(fmt.Sprintf("读取到 %d 个URL", len(urlList)))
+	for _, item := range urlList {
+		if err = run(item, savePath, verify); err != nil {
+			utils.ErrInfo(err.Error())
+		}
+	}
+	return nil
+}
+
+func run(url, savePath string, verify storage.Storage) error {
 	cookiePath, defCookie := getCookiepath(url)
 	cookie := setRequestOptions(cookiePath, defCookie)
 	reptilesData, err := reptiles.Extract(url, reptilesTypes.Options{
@@ -95,8 +127,7 @@ GETURL:
 		Verify: verify,
 	})
 	if err != nil {
-		utils.ErrInfo(err.Error())
-		goto GETURL
+		return err
 	}
 	dataCount := len(reptilesData)
 	for i, d := range reptilesData {
@@ -109,7 +140,7 @@ GETURL:
 			utils.ErrInfo(err.Error())
 		}
 	}
-	goto GETURL
+	return nil
 }
 
 func setRequestOptions(cookie, defCookie string) string {
