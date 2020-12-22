@@ -136,6 +136,7 @@ func run(url, savePath string, verify storage.Storage) error {
 			Cookie:   cookie,
 			Verify:   verify,
 			SavePath: savePath,
+			Stream:   config.GetString("app.stream"),
 		}); err != nil {
 			utils.ErrInfo(err.Error())
 		}

@@ -224,3 +224,10 @@ type ssrHydratedDataEpisode struct {
 		} `json:"gidInformation"`
 	} `json:"anyVideo"`
 }
+
+// Stream is the data structure for each video stream, eg: 720P, 1080P.
+type Stream struct {
+	ID      string
+	Quality string
+	URL     string
+}

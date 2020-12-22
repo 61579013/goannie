@@ -71,6 +71,7 @@ func init() {
 	Config.SetDefault("app.retryTimes", 100)
 	Config.SetDefault("app.refer", "")
 	Config.SetDefault("app.debug", false)
+	Config.SetDefault("app.stream", "default")
 	Config.SetDefault("reptiles.regexpTitle", ".*?")
 	Config.SetDefault("binary.check", true)
 	Config.SetDefault("binary.UpdateNetworkJSONFile", "http://image.68wu.cn/goannie/binary_version.json")

@@ -13,6 +13,7 @@ type Options struct {
 	Cookie   string
 	SavePath string
 	Verify   storage.Storage
+	Stream   string
 }
 
 // Extractor 解析器&下载器主要实现接口

@@ -100,7 +100,7 @@ func homePage(url string, option types.Options) ([]*types.Data, error) {
 			onMaxTime = v.PublishTime
 			onCount++
 		}
-		if !authorVideo.Data.HasMore || onCount >= end {
+		if !authorVideo.Data.HasMore || onCount > end {
 			break
 		}
 		time.Sleep(2 * time.Second)
