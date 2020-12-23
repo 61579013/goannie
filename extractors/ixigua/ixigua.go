@@ -5,6 +5,9 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"regexp"
 	"strings"
 
@@ -45,10 +48,11 @@ func (e *extractor) Extract(url string, option types.Options) error {
 		return err
 	}
 	var (
-		title       string
-		vid         string
-		downloadURL string
-		quality     string
+		title    string
+		vid      string
+		videoURL string
+		audioURL string
+		quality  string
 	)
 	if regexp.MustCompile(`"albumId"`).Match(html) {
 		ratedData, err := getSsrHydratedDataEpisode(html)
@@ -58,7 +62,7 @@ func (e *extractor) Extract(url string, option types.Options) error {
 		episodeInfo := ratedData.AnyVideo.GidInformation.PackerData.EpisodeInfo
 		title = fmt.Sprintf("%s %s", episodeInfo.Title, episodeInfo.Name)
 		vid = episodeInfo.EpisodeID
-		downloadURL, quality = getDownloadURLEpisode(ratedData)
+		videoURL, quality = getDownloadURLEpisode(ratedData)
 	} else {
 		ratedData, err := getSsrHydratedData(html)
 		if err != nil {
@@ -66,7 +70,10 @@ func (e *extractor) Extract(url string, option types.Options) error {
 		}
 		title = ratedData.AnyVideo.GidInformation.PackerData.Video.Title
 		vid = ratedData.AnyVideo.GidInformation.PackerData.Video.VID
-		downloadURL, quality = getDownloadURL(ratedData)
+		videoURL, audioURL, quality = getDownloadURL(ratedData)
+	}
+	if videoURL == "" {
+		return errors.New("获取下载链接失败")
 	}
 	if config.GetBool("app.debug") {
 		fmt.Printf("title: %s\n", title)
@@ -75,10 +82,7 @@ func (e *extractor) Extract(url string, option types.Options) error {
 	if config.GetBool("app.isFiltrationID") && vid != "" && option.Verify.Check(e.Key(), vid) {
 		return fmt.Errorf("%s 在过滤库中，修改配置文件isFiltrationID为false不再过滤。", vid)
 	}
-	if downloadURL == "" {
-		return errors.New("获取下载链接失败")
-	}
-	if err := download(e.Name(), downloadURL, title, quality, option); err != nil {
+	if err := download(e.Name(), videoURL, audioURL, title, quality, option); err != nil {
 		return err
 	}
 	option.Verify.Add(e.Key(), vid)
@@ -90,23 +94,42 @@ func New() types.Extractor {
 	return &extractor{}
 }
 
-func download(name, url, title, quality string, option types.Options) error {
+func download(name, videoURL, audioURL, title, quality string, option types.Options) error {
 	if config.GetBool("app.debug") {
-		fmt.Printf("downloadURL: %s\n", url)
+		fmt.Printf("videoURL: %s\n", videoURL)
+		fmt.Printf("audioURL: %s\n", audioURL)
 	}
-	types.NewDownloadPrint(fmt.Sprintf("%s ixigua.com", name), title, quality, url).Print()
-	if err := downloader.New(url, option.SavePath).SetOutputName(fmt.Sprintf("%s.mp4", title)).Run(); err != nil {
-		return err
+	types.NewDownloadPrint(fmt.Sprintf("%s ixigua.com", name), title, quality, videoURL).Print()
+	if audioURL != "" {
+		videoFile := fmt.Sprintf("%s_video.mp4", title)
+		if err := downloader.New(videoURL, option.SavePath).SetOutputName(videoFile).Run(); err != nil {
+			return err
+		}
+		defer os.Remove(filepath.Join(option.SavePath, videoFile))
+		audioFile := fmt.Sprintf("%s_audio.mp3", title)
+		if err := downloader.New(audioURL, option.SavePath).SetOutputName(audioFile).Run(); err != nil {
+			return err
+		}
+		defer os.Remove(filepath.Join(option.SavePath, audioFile))
+		if err := exec.Command("ffmpeg", "-i", filepath.Join(option.SavePath, audioFile), "-i", filepath.Join(option.SavePath, videoFile), "-c:v", "copy", "-c:a", "aac", "-strict", "experimental", filepath.Join(option.SavePath, fmt.Sprintf("%s.mp4", title))).Run(); err != nil {
+			return err
+		}
+	} else {
+		if err := downloader.New(videoURL, option.SavePath).SetOutputName(fmt.Sprintf("%s.mp4", title)).Run(); err != nil {
+			return err
+		}
 	}
 	fmt.Println("")
 	return nil
 }
 
-func getDownloadURL(d *ssrHydratedData) (string, string) {
+func getDownloadURL(d *ssrHydratedData) (string, string, string) {
 	videoList := d.AnyVideo.GidInformation.PackerData.Video.VideoResource.Dash120Fps.DynamicVideo.DynamicVideoList
-	if len(videoList) != 0 && videoList[len(videoList)-1].MainURL != "" {
-		decoded, _ := base64.StdEncoding.DecodeString(videoList[len(videoList)-1].MainURL)
-		return string(decoded), videoList[len(videoList)-1].Definition
+	audioList := d.AnyVideo.GidInformation.PackerData.Video.VideoResource.Dash120Fps.DynamicVideo.DynamicAudioList
+	if len(videoList) != 0 && videoList[len(videoList)-1].MainURL != "" && len(audioList) != 0 && videoList[len(audioList)-1].MainURL != "" {
+		videoURL, _ := base64.StdEncoding.DecodeString(videoList[len(videoList)-1].MainURL)
+		audioURL, _ := base64.StdEncoding.DecodeString(audioList[len(audioList)-1].MainURL)
+		return string(videoURL), string(audioURL), videoList[len(videoList)-1].Definition
 	}
 	vl := d.AnyVideo.GidInformation.PackerData.Video.VideoResource.Normal.VideoList
 	var murl string
@@ -125,7 +148,7 @@ func getDownloadURL(d *ssrHydratedData) (string, string) {
 		quality = vl.Video1.Definition
 	}
 	r, _ := base64.StdEncoding.DecodeString(murl)
-	return string(r), quality
+	return string(r), "", quality
 }
 
 func getDownloadURLEpisode(d *ssrHydratedDataEpisode) (string, string) {

@@ -3,6 +3,7 @@ module gitee.com/rock_rabbit/goannie
 go 1.15
 
 require (
+	gitee.com/rock_rabbit/downloader v1.1.1
 	github.com/MercuryEngineering/CookieMonster v0.0.0-20180304172713-1584578b3403
 	github.com/cheggaaa/pb/v3 v3.0.5
 	github.com/fatih/color v1.10.0
