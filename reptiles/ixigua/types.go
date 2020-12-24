@@ -2,8 +2,8 @@ package ixigua
 
 type homeHydratedData struct {
 	AuthorDetailInfo struct {
-		UserID          string `json:"user_id"`
-		MediaID         string `json:"media_id"`
+		UserID string `json:"user_id"`
+		// MediaID         string `json:"media_id"`
 		Name            string `json:"name"`
 		Introduce       string `json:"introduce"`
 		FansNum         string `json:"fansNum"`
