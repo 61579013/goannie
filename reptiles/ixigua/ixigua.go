@@ -10,7 +10,6 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
-	"time"
 
 	"gitee.com/rock_rabbit/goannie/config"
 
@@ -103,7 +102,7 @@ func homePage(url string, option types.Options) ([]*types.Data, error) {
 		if !authorVideo.Data.HasMore || onCount > end {
 			break
 		}
-		time.Sleep(2 * time.Second)
+		// time.Sleep(2 * time.Second)
 	}
 	fmt.Println("")
 	utils.InfoKv("采集数量：", fmt.Sprintf("%d", len(retData)))

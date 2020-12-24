@@ -101,17 +101,24 @@ func download(name, videoURL, audioURL, title, quality string, option types.Opti
 	}
 	types.NewDownloadPrint(fmt.Sprintf("%s ixigua.com", name), title, quality, videoURL).Print()
 	if audioURL != "" {
-		videoFile := fmt.Sprintf("%s_video.mp4", title)
+		filtrationFilename := downloader.GetFiltrationFilename(title)
+		videoFile := fmt.Sprintf("%s_video.mp4", filtrationFilename)
+		videoPath := filepath.Join(option.SavePath, videoFile)
 		if err := downloader.New(videoURL, option.SavePath).SetOutputName(videoFile).Run(); err != nil {
-			return err
+			if err.Error() != "file already exists" {
+				return err
+			}
 		}
-		defer os.Remove(filepath.Join(option.SavePath, videoFile))
-		audioFile := fmt.Sprintf("%s_audio.mp3", title)
+		defer os.Remove(videoPath)
+		audioFile := fmt.Sprintf("%s_audio.mp3", filtrationFilename)
+		audioPath := filepath.Join(option.SavePath, audioFile)
 		if err := downloader.New(audioURL, option.SavePath).SetOutputName(audioFile).Run(); err != nil {
-			return err
+			if err.Error() != "file already exists" {
+				return err
+			}
 		}
-		defer os.Remove(filepath.Join(option.SavePath, audioFile))
-		if err := exec.Command("ffmpeg", "-i", filepath.Join(option.SavePath, audioFile), "-i", filepath.Join(option.SavePath, videoFile), "-c:v", "copy", "-c:a", "aac", "-strict", "experimental", filepath.Join(option.SavePath, fmt.Sprintf("%s.mp4", title))).Run(); err != nil {
+		defer os.Remove(audioPath)
+		if err := exec.Command("ffmpeg", "-i", audioPath, "-i", videoPath, "-c:v", "copy", "-c:a", "aac", "-strict", "experimental", filepath.Join(option.SavePath, fmt.Sprintf("%s.mp4", filtrationFilename))).Run(); err != nil {
 			return err
 		}
 	} else {

@@ -11,9 +11,9 @@ import (
 
 const (
 	// VERSION 版本号
-	VERSION = "1.0.3"
+	VERSION = "1.0.4"
 	// UPDATETIME 更新时间
-	UPDATETIME = "2020-12-23"
+	UPDATETIME = "2020-12-24"
 	// TITLE 软件标题
 	TITLE = `
                                         __           
