@@ -2,7 +2,9 @@ package utils
 
 import (
 	"bufio"
+	"crypto/md5"
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -168,4 +170,30 @@ func MatchOneOf(text string, patterns ...string) []string {
 		}
 	}
 	return nil
+}
+
+// MatchOneOf match one of the patterns
+func MatchOneOfByte(text []byte, patterns ...string) [][]byte {
+	var (
+		re    *regexp.Regexp
+		value [][]byte
+	)
+	for _, pattern := range patterns {
+		// (?flags): set flags within current group; non-capturing
+		// s: let . match \n (default false)
+		// https://github.com/google/re2/wiki/Syntax
+		re = regexp.MustCompile(pattern)
+		value = re.FindSubmatch(text)
+		if len(value) > 0 {
+			return value
+		}
+	}
+	return nil
+}
+
+// Md5 md5 hash
+func Md5(text string) string {
+	sign := md5.New()
+	sign.Write([]byte(text)) // nolint
+	return fmt.Sprintf("%x", sign.Sum(nil))
 }
