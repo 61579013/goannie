@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strings"
 
+	"gitee.com/rock_rabbit/goannie/reptiles/iqiyi"
 	"gitee.com/rock_rabbit/goannie/reptiles/ixigua"
 	"gitee.com/rock_rabbit/goannie/reptiles/types"
 	"gitee.com/rock_rabbit/goannie/utils"
@@ -16,6 +17,7 @@ var ReptilesMap map[string]types.Reptiles
 func init() {
 	ReptilesMap = map[string]types.Reptiles{
 		"ixigua": ixigua.New(),
+		"iqiyi":  iqiyi.New(),
 	}
 }
 

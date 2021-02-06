@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"strings"
 
+	"gitee.com/rock_rabbit/goannie/extractors/iqiyi"
 	"gitee.com/rock_rabbit/goannie/extractors/ixigua"
 	"gitee.com/rock_rabbit/goannie/extractors/types"
 	"gitee.com/rock_rabbit/goannie/utils"
@@ -16,6 +17,7 @@ var ExtractorMap map[string]types.Extractor
 func init() {
 	ExtractorMap = map[string]types.Extractor{
 		"ixigua": ixigua.New(),
+		"iqiyi":  iqiyi.New(),
 	}
 }
 
